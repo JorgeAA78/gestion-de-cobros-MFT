@@ -37,10 +37,14 @@ const transporter = nodemailer.createTransport({
         pass: SMTP_CONFIG.pass,
     },
     tls: {
-        // Ignorar errores de certificado (necesario en algunas redes/proxies)
         rejectUnauthorized: false
-    }
-});
+    },
+    // Forzar IPv4 para evitar problemas de conectividad en Railway
+    family: 4,
+    connectionTimeout: 30000,
+    greetingTimeout: 30000,
+    socketTimeout: 60000,
+} as nodemailer.TransportOptions);
 
 const FROM_EMAIL = SMTP_CONFIG.from || SMTP_CONFIG.user || 'noreply@mutantesfightteam.com';
 const APP_NAME = 'Mutantes Fight Team - Sistema de Cobros';
