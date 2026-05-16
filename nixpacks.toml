@@ -10,4 +10,4 @@ cmds = ["pnpm run build:all"]
 [start]
 cmd = "pnpm run start"
 
-# Force cache invalidation v2
+# Force cache invalidation v3 - IPv4 SMTP fix

@@ -28,6 +28,7 @@ if (!SMTP_CONFIG.user || !SMTP_CONFIG.pass) {
 }
 
 // Configuración del transportador de email
+// CRÍTICO: Forzar IPv4 para Railway (no soporta IPv6)
 const transporter = nodemailer.createTransport({
     host: SMTP_CONFIG.host,
     port: SMTP_CONFIG.port,
@@ -39,12 +40,17 @@ const transporter = nodemailer.createTransport({
     tls: {
         rejectUnauthorized: false
     },
-    // Forzar IPv4 para evitar problemas de conectividad en Railway
-    family: 4,
     connectionTimeout: 30000,
     greetingTimeout: 30000,
     socketTimeout: 60000,
-} as nodemailer.TransportOptions);
+    // @ts-ignore - family es válido en nodemailer pero no está en los tipos
+    family: 4,
+    // Forzar lookup DNS a IPv4
+    dnsOptions: {
+        family: 4,
+        hints: 0
+    }
+} as any);
 
 const FROM_EMAIL = SMTP_CONFIG.from || SMTP_CONFIG.user || 'noreply@mutantesfightteam.com';
 const APP_NAME = 'Mutantes Fight Team - Sistema de Cobros';
