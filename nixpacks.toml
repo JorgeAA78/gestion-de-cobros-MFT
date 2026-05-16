@@ -2,10 +2,12 @@
 nixPkgs = ["nodejs_20", "pnpm"]
 
 [phases.install]
-cmds = ["pnpm install"]
+cmds = ["pnpm install --force"]
 
 [phases.build]
 cmds = ["pnpm run build:all"]
 
 [start]
 cmd = "pnpm run start"
+
+# Force cache invalidation v2
