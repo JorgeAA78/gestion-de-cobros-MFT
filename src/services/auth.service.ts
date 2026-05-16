@@ -1,6 +1,6 @@
 // ─── Servicio de autenticación para el frontend ──────────────────────────────
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const API_URL = (import.meta as any).env?.PROD ? '' : 'http://localhost:3001';
 
 interface RegistroData {
     email: string;
