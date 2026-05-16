@@ -529,7 +529,8 @@ app.delete('/api/data', (_req, res) => {
 if (process.env.NODE_ENV === 'production') {
     const distPath = path.join(__dirname, '..', 'dist');
     app.use(express.static(distPath));
-    app.get('*', (_req, res) => {
+    // Express 5 requiere sintaxis diferente para catch-all
+    app.get('/{*path}', (_req, res) => {
         res.sendFile(path.join(distPath, 'index.html'));
     });
 }
