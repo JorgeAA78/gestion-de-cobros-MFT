@@ -1,54 +1,30 @@
 // ─── Servicio de envío de emails ─────────────────────────────────────────────
-import nodemailer from 'nodemailer';
+// Usamos Resend (API HTTP) porque Railway bloquea SMTP saliente
+import { Resend } from 'resend';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
-// Verificar configuración SMTP
-// Railway bloquea puerto 587, usamos 465 (SSL) que suele estar permitido
-const SMTP_CONFIG = {
-    host: process.env.SMTP_HOST || 'smtp.gmail.com',
-    port: parseInt(process.env.SMTP_PORT || '465'),
-    secure: true, // Puerto 465 requiere SSL
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-    from: process.env.SMTP_FROM,
-};
+// Configuración de Resend
+const RESEND_API_KEY = process.env.RESEND_API_KEY;
+const FROM_EMAIL = process.env.EMAIL_FROM || 'onboarding@resend.dev';
 
-// Log de configuración (sin mostrar contraseña completa)
-console.log('📧 Configuración SMTP:');
-console.log(`   Host: ${SMTP_CONFIG.host}:${SMTP_CONFIG.port}`);
-console.log(`   Usuario: ${SMTP_CONFIG.user || '⚠️ NO CONFIGURADO'}`);
-console.log(`   Contraseña: ${SMTP_CONFIG.pass ? '✓ Configurada' : '⚠️ NO CONFIGURADA'}`);
-console.log(`   From: ${SMTP_CONFIG.from || '⚠️ NO CONFIGURADO'}`);
+// Log de configuración
+console.log('📧 Configuración Email (Resend):');
+console.log(`   API Key: ${RESEND_API_KEY ? '✓ Configurada' : '⚠️ NO CONFIGURADA'}`);
+console.log(`   From: ${FROM_EMAIL}`);
 
-if (!SMTP_CONFIG.user || !SMTP_CONFIG.pass) {
-    console.warn('\n⚠️  ADVERTENCIA: Credenciales SMTP no configuradas.');
+if (!RESEND_API_KEY) {
+    console.warn('\n⚠️  ADVERTENCIA: RESEND_API_KEY no configurada.');
     console.warn('   Los emails NO se enviarán. El token se mostrará en consola.');
-    console.warn('   Configura SMTP_USER y SMTP_PASS en el archivo .env\n');
+    console.warn('   Obtén tu API key gratis en: https://resend.com\n');
 }
 
-// Configuración del transportador de email
-// Puerto 465 con SSL directo (no STARTTLS)
-const transporter = nodemailer.createTransport({
-    host: SMTP_CONFIG.host,
-    port: SMTP_CONFIG.port,
-    secure: SMTP_CONFIG.secure,
-    auth: {
-        user: SMTP_CONFIG.user,
-        pass: SMTP_CONFIG.pass,
-    },
-    tls: {
-        rejectUnauthorized: false
-    },
-    connectionTimeout: 30000,
-    greetingTimeout: 30000,
-    socketTimeout: 60000,
-} as any);
+// Inicializar Resend
+const resend = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null;
 
-const FROM_EMAIL = SMTP_CONFIG.from || SMTP_CONFIG.user || 'noreply@mutantesfightteam.com';
 const APP_NAME = 'Mutantes Fight Team - Sistema de Cobros';
-const LOGO_URL = 'https://res.cloudinary.com/dydeai3gg/image/upload/v1775909710/logo_mutantes_jzabrb.jpg';
+const LOGO_URL = 'https://gestion-de-cobros-mft-production.up.railway.app/escudo26.png';
 
 // ─── Generar token de 4 dígitos ──────────────────────────────────────────────
 export function generarToken4Digitos(): string {
@@ -105,22 +81,10 @@ export async function enviarEmailVerificacion(
         </div>
     `;
 
-    const textContent = `
-¡Hola ${nombre}!
-
-Gracias por registrarte en ${APP_NAME}.
-
-Tu código de verificación es: ${token}
-
-Este código expira en 15 minutos.
-
-Si no solicitaste este registro, ignora este email.
-    `;
-
-    // Si no hay credenciales SMTP, solo mostrar en consola
-    if (!SMTP_CONFIG.user || !SMTP_CONFIG.pass) {
+    // Si no hay API key de Resend, solo mostrar en consola
+    if (!resend) {
         console.log('\n' + '='.repeat(50));
-        console.log(`📧 EMAIL NO ENVIADO (SMTP no configurado)`);
+        console.log(`📧 EMAIL NO ENVIADO (Resend no configurado)`);
         console.log(`   Para: ${email}`);
         console.log(`   Nombre: ${nombre}`);
         console.log(`   🔐 CÓDIGO DE VERIFICACIÓN: ${token}`);
@@ -129,22 +93,23 @@ Si no solicitaste este registro, ignora este email.
     }
 
     try {
-        await transporter.sendMail({
-            from: `"${APP_NAME}" <${FROM_EMAIL}>`,
+        const { error } = await resend.emails.send({
+            from: FROM_EMAIL,
             to: email,
             subject: `🔐 Código de verificación: ${token}`,
-            text: textContent,
             html: htmlContent,
         });
+
+        if (error) {
+            throw error;
+        }
         
         console.log(`📧 Email de verificación enviado a ${email}`);
         console.log(`   🔐 Token: ${token}`);
         return true;
     } catch (error: any) {
         console.error('\n❌ Error enviando email de verificación:');
-        console.error(`   Mensaje: ${error.message}`);
-        if (error.code) console.error(`   Código: ${error.code}`);
-        if (error.response) console.error(`   Respuesta: ${error.response}`);
+        console.error(`   Mensaje: ${error.message || JSON.stringify(error)}`);
         console.log(`\n   🔐 CÓDIGO DE VERIFICACIÓN (backup): ${token}\n`);
         return false;
     }
@@ -187,14 +152,22 @@ export async function enviarEmailBienvenida(
         </div>
     `;
 
+    if (!resend) {
+        console.log(`📧 Email de bienvenida no enviado (Resend no configurado)`);
+        return true;
+    }
+
     try {
-        await transporter.sendMail({
-            from: `"${APP_NAME}" <${FROM_EMAIL}>`,
+        const { error } = await resend.emails.send({
+            from: FROM_EMAIL,
             to: email,
             subject: `✅ ¡Bienvenido/a a ${APP_NAME}!`,
-            text: `¡Hola ${nombre}! Tu cuenta ha sido verificada exitosamente.`,
             html: htmlContent,
         });
+
+        if (error) {
+            throw error;
+        }
         
         console.log(`📧 Email de bienvenida enviado a ${email}`);
         return true;
@@ -204,14 +177,12 @@ export async function enviarEmailBienvenida(
     }
 }
 
-// ─── Verificar conexión SMTP ─────────────────────────────────────────────────
+// ─── Verificar conexión (ya no necesario con API) ────────────────────────────
 export async function verificarConexionSMTP(): Promise<boolean> {
-    try {
-        await transporter.verify();
-        console.log('✅ Conexión SMTP verificada correctamente');
-        return true;
-    } catch (error) {
-        console.error('❌ Error verificando conexión SMTP:', error);
+    if (!resend) {
+        console.log('⚠️ Resend no configurado');
         return false;
     }
+    console.log('✅ Resend API configurada correctamente');
+    return true;
 }
