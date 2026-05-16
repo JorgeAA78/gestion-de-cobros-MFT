@@ -5,12 +5,11 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 // Verificar configuración SMTP
-// Usamos IP de Gmail directamente para evitar problemas de IPv6 en Railway
-const GMAIL_IPV4 = '142.250.27.109'; // smtp.gmail.com IPv4
+// Railway bloquea puerto 587, usamos 465 (SSL) que suele estar permitido
 const SMTP_CONFIG = {
-    host: process.env.SMTP_HOST === 'smtp.gmail.com' ? GMAIL_IPV4 : (process.env.SMTP_HOST || GMAIL_IPV4),
-    port: parseInt(process.env.SMTP_PORT || '587'),
-    secure: process.env.SMTP_SECURE === 'true',
+    host: process.env.SMTP_HOST || 'smtp.gmail.com',
+    port: parseInt(process.env.SMTP_PORT || '465'),
+    secure: true, // Puerto 465 requiere SSL
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
     from: process.env.SMTP_FROM,
@@ -30,7 +29,7 @@ if (!SMTP_CONFIG.user || !SMTP_CONFIG.pass) {
 }
 
 // Configuración del transportador de email
-// CRÍTICO: Usamos IP directa + servername para TLS
+// Puerto 465 con SSL directo (no STARTTLS)
 const transporter = nodemailer.createTransport({
     host: SMTP_CONFIG.host,
     port: SMTP_CONFIG.port,
@@ -40,9 +39,7 @@ const transporter = nodemailer.createTransport({
         pass: SMTP_CONFIG.pass,
     },
     tls: {
-        rejectUnauthorized: false,
-        // Necesario cuando usamos IP directa
-        servername: 'smtp.gmail.com'
+        rejectUnauthorized: false
     },
     connectionTimeout: 30000,
     greetingTimeout: 30000,
