@@ -5,8 +5,10 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 // Verificar configuración SMTP
+// Usamos IP de Gmail directamente para evitar problemas de IPv6 en Railway
+const GMAIL_IPV4 = '142.250.27.109'; // smtp.gmail.com IPv4
 const SMTP_CONFIG = {
-    host: process.env.SMTP_HOST || 'smtp.gmail.com',
+    host: process.env.SMTP_HOST === 'smtp.gmail.com' ? GMAIL_IPV4 : (process.env.SMTP_HOST || GMAIL_IPV4),
     port: parseInt(process.env.SMTP_PORT || '587'),
     secure: process.env.SMTP_SECURE === 'true',
     user: process.env.SMTP_USER,
@@ -28,7 +30,7 @@ if (!SMTP_CONFIG.user || !SMTP_CONFIG.pass) {
 }
 
 // Configuración del transportador de email
-// CRÍTICO: Forzar IPv4 para Railway (no soporta IPv6)
+// CRÍTICO: Usamos IP directa + servername para TLS
 const transporter = nodemailer.createTransport({
     host: SMTP_CONFIG.host,
     port: SMTP_CONFIG.port,
@@ -38,18 +40,13 @@ const transporter = nodemailer.createTransport({
         pass: SMTP_CONFIG.pass,
     },
     tls: {
-        rejectUnauthorized: false
+        rejectUnauthorized: false,
+        // Necesario cuando usamos IP directa
+        servername: 'smtp.gmail.com'
     },
     connectionTimeout: 30000,
     greetingTimeout: 30000,
     socketTimeout: 60000,
-    // @ts-ignore - family es válido en nodemailer pero no está en los tipos
-    family: 4,
-    // Forzar lookup DNS a IPv4
-    dnsOptions: {
-        family: 4,
-        hints: 0
-    }
 } as any);
 
 const FROM_EMAIL = SMTP_CONFIG.from || SMTP_CONFIG.user || 'noreply@mutantesfightteam.com';
