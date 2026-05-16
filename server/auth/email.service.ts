@@ -16,8 +16,6 @@ console.log(`   Service ID: ${EMAILJS_SERVICE_ID}`);
 console.log(`   Template ID: ${EMAILJS_TEMPLATE_ID}`);
 console.log(`   Public Key: ${EMAILJS_PUBLIC_KEY ? '✓ Configurada' : '⚠️ NO CONFIGURADA'}`);
 
-const APP_NAME = 'Mutantes Fight Team - Sistema de Cobros';
-
 // ─── Generar token de 4 dígitos ──────────────────────────────────────────────
 export function generarToken4Digitos(): string {
     return Math.floor(1000 + Math.random() * 9000).toString();
