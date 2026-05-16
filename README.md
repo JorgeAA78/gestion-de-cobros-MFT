@@ -2,6 +2,8 @@
 
 Sistema de gestión de cuotas y recordatorios automáticos por WhatsApp para academia de Brazilian Jiu Jitsu.
 
+🌐 **Demo:** [gestion-de-cobros-mft-production.up.railway.app](https://gestion-de-cobros-mft-production.up.railway.app/)
+
 ## ✨ Características
 
 - 📊 **Dashboard** con estadísticas de alumnos y pagos
@@ -11,19 +13,21 @@ Sistema de gestión de cuotas y recordatorios automáticos por WhatsApp para aca
 - 🔐 **Sistema de autenticación** con verificación por email
 - ☁️ **Base de datos en la nube** con Supabase
 - 🗑️ **Eliminación masiva** de alumnos
+- 📱 **Diseño responsivo** (móvil, tablet, desktop)
 
 ## 🛠️ Tecnologías
 
 | Categoría | Tecnología |
 |-----------|------------|
 | Frontend | React 19 + TypeScript + Vite |
-| Estado | Zustand (persistido en localStorage) |
-| Backend | Express + node-cron |
+| Estado | Zustand |
+| Backend | Express 5 + node-cron |
 | Base de datos | Supabase (PostgreSQL) |
 | Autenticación | JWT + bcrypt |
-| Email | Nodemailer (SMTP) |
+| Email | EmailJS (API HTTP) |
 | WhatsApp | Evolution API |
 | Excel/CSV | SheetJS |
+| Deploy | Railway |
 
 ## 🚀 Instalación
 
@@ -88,13 +92,10 @@ PORT=3001
 # JWT
 JWT_SECRET=tu-clave-secreta-muy-segura
 
-# SMTP (Gmail)
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_SECURE=false
-SMTP_USER=tu-email@gmail.com
-SMTP_PASS=tu-contraseña-de-aplicacion
-SMTP_FROM=tu-email@gmail.com
+# EmailJS (https://www.emailjs.com/)
+EMAILJS_SERVICE_ID=service_xxxxx
+EMAILJS_TEMPLATE_ID=template_xxxxx
+EMAILJS_PUBLIC_KEY=tu-public-key
 
 # Supabase
 SUPABASE_URL=https://tu-proyecto.supabase.co
@@ -112,9 +113,13 @@ EVOLUTION_INSTANCE=tu-instancia
 2. Ejecutar `supabase/schema.sql` en el SQL Editor
 3. Copiar URL y Service Role Key al `.env`
 
-### Gmail SMTP
+### EmailJS
 
-Crear una [Contraseña de aplicación](https://myaccount.google.com/apppasswords) para usar con Nodemailer.
+1. Crear cuenta en [emailjs.com](https://www.emailjs.com/)
+2. Agregar Email Service (Gmail)
+3. Crear Template con variables: `{{to_email}}`, `{{nombre}}`, `{{token}}`
+4. En Security, habilitar "Allow EmailJS API for non-browser applications"
+5. Copiar Service ID, Template ID y Public Key al `.env`
 
 ## 📱 Recordatorios automáticos
 
@@ -194,6 +199,21 @@ pnpm run build        # Build de producción
 pnpm run lint         # Verificar código
 ```
 
-## 📄 Licencia
+## � Deploy en Railway
+
+1. Conectar repositorio de GitHub
+2. Agregar variables de entorno en Railway
+3. El deploy es automático con cada push a `main`
+
+```bash
+# Build commands (configurados en nixpacks.toml)
+pnpm install --force
+pnpm run build:all
+
+# Start command
+pnpm run start
+```
+
+## �📄 Licencia
 
 MIT © Mutantes Fight Team
