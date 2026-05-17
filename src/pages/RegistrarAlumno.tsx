@@ -34,7 +34,7 @@ export default function RegistrarAlumno() {
     const fileRef = useRef<HTMLInputElement>(null);
 
     // Columns the parser recognizes
-    const KNOWN_COLS = ['nombre', 'name', 'alumno', 'nombre completo', 'apellido y nombre', 'nombre y apellido', 'nombre apellido', 'apellido', 'socio', 'cliente', 'estudiante', 'integrante', 'whatsapp', 'telefono', 'teléfono', 'tel', 'celular', 'phone', 'movil', 'móvil', 'contacto', 'numero', 'número', 'cel', 'num', 'tel/cel', 'email', 'correo', 'mail', 'plan', 'tipo de plan', 'categoria', 'categoría', 'modalidad', 'cuota', 'monto', 'precio', 'valor', 'importe', 'tarifa', 'mensualidad', 'nivel', 'cinturon', 'cinturón', 'belt', 'grado', 'faja', 'notas', 'observaciones', 'notes', 'comentarios', 'descripcion', 'obs'];
+    const KNOWN_COLS = ['nombre', 'name', 'nombres', 'first name', 'firstname', 'first_name', 'alumno', 'nombre completo', 'apellido y nombre', 'nombre y apellido', 'nombre apellido', 'apellido', 'apellidos', 'surname', 'last name', 'lastname', 'last_name', 'socio', 'cliente', 'estudiante', 'integrante', 'whatsapp', 'telefono', 'teléfono', 'tel', 'celular', 'phone', 'movil', 'móvil', 'contacto', 'numero', 'número', 'cel', 'num', 'tel/cel', 'email', 'correo', 'mail', 'plan', 'tipo de plan', 'categoria', 'categoría', 'modalidad', 'cuota', 'monto', 'precio', 'valor', 'importe', 'tarifa', 'mensualidad', 'nivel', 'cinturon', 'cinturón', 'belt', 'grado', 'faja', 'notas', 'observaciones', 'notes', 'comentarios', 'descripcion', 'obs'];
 
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();

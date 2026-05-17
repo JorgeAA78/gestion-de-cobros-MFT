@@ -3,13 +3,17 @@ import type { Alumno } from '../types';
 
 type RawRow = Record<string, string | number | undefined>;
 
-const COLUMN_MAP: Record<string, keyof Omit<Alumno, 'id' | 'fechaRegistro'>> = {
-    // Nombre
-    nombre: 'nombre', name: 'nombre', alumno: 'nombre',
-    'nombre completo': 'nombre', 'apellido y nombre': 'nombre',
+const COLUMN_MAP: Record<string, keyof Omit<Alumno, 'id' | 'fechaRegistro'> | 'apellido'> = {
+    // Nombre completo (cuando viene todo junto)
+    alumno: 'nombre', 'nombre completo': 'nombre', 'apellido y nombre': 'nombre',
     'nombre y apellido': 'nombre', 'nombre apellido': 'nombre',
-    apellido: 'nombre', socio: 'nombre', cliente: 'nombre',
-    estudiante: 'nombre', integrante: 'nombre',
+    socio: 'nombre', cliente: 'nombre', estudiante: 'nombre', integrante: 'nombre',
+    // Nombre (solo nombre de pila)
+    nombre: 'nombre', name: 'nombre', 'first name': 'nombre', firstname: 'nombre',
+    first_name: 'nombre', nombres: 'nombre',
+    // Apellido (columna separada)
+    apellido: 'apellido', apellidos: 'apellido', surname: 'apellido',
+    'last name': 'apellido', lastname: 'apellido', last_name: 'apellido',
     // WhatsApp
     whatsapp: 'whatsapp', telefono: 'whatsapp', 'teléfono': 'whatsapp',
     tel: 'whatsapp', celular: 'whatsapp', phone: 'whatsapp',
@@ -85,6 +89,7 @@ export function parseExcelFile(
                             cuota: 0,
                             nivel: 'blanco',
                         };
+                        let apellido = '';
 
                         for (const [rawKey, value] of Object.entries(row)) {
                             const mappedKey = mapColumnName(rawKey);
@@ -97,10 +102,19 @@ export function parseExcelFile(
                                     alumno.nivel = normalizeNivel(String(value));
                                 } else if (mappedKey === 'whatsapp') {
                                     alumno.whatsapp = String(value).replace(/\D/g, '');
+                                } else if (mappedKey === 'apellido') {
+                                    apellido = String(value).trim();
                                 } else {
                                     alumno[mappedKey] = String(value);
                                 }
                             }
+                        }
+
+                        // Combinar nombre y apellido si ambos existen
+                        if (apellido && alumno.nombre) {
+                            alumno.nombre = `${alumno.nombre.trim()} ${apellido}`;
+                        } else if (apellido && !alumno.nombre) {
+                            alumno.nombre = apellido;
                         }
 
                         return alumno as Omit<Alumno, 'id' | 'fechaRegistro'>;
@@ -137,6 +151,7 @@ export function parseCSVText(
             cuota: 0,
             nivel: 'blanco',
         };
+        let apellido = '';
 
         headers.forEach((h, idx) => {
             const key = mapColumnName(h);
@@ -147,9 +162,18 @@ export function parseCSVText(
                 else if (key === 'nivel') alumno.nivel = normalizeNivel(vals[idx]);
                 else if (key === 'whatsapp')
                     alumno.whatsapp = vals[idx].replace(/\D/g, '');
+                else if (key === 'apellido')
+                    apellido = vals[idx].trim();
                 else alumno[key] = vals[idx];
             }
         });
+
+        // Combinar nombre y apellido si ambos existen
+        if (apellido && alumno.nombre) {
+            alumno.nombre = `${alumno.nombre.trim()} ${apellido}`;
+        } else if (apellido && !alumno.nombre) {
+            alumno.nombre = apellido;
+        }
 
         if (alumno.nombre && alumno.whatsapp) {
             result.push(alumno as Omit<Alumno, 'id' | 'fechaRegistro'>);
