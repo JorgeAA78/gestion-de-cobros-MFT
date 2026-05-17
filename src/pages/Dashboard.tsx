@@ -1,5 +1,5 @@
 import { useStore } from '../store/useStore';
-import { MONTH_NAMES } from '../types';
+import { MONTH_NAMES, ESTADO_LABELS, type EstadoAlumno } from '../types';
 import { formatCurrency } from '../services/evolution';
 import { useState, useEffect, useMemo } from 'react';
 
@@ -31,6 +31,7 @@ export default function Dashboard() {
     const marcarPagado = useStore((s) => s.marcarPagado);
     const marcarPendiente = useStore((s) => s.marcarPendiente);
     const removeAlumno = useStore((s) => s.removeAlumno);
+    const updateAlumno = useStore((s) => s.updateAlumno);
 
     const now = new Date();
     const mes = now.getMonth() + 1;
@@ -238,21 +239,23 @@ export default function Dashboard() {
                                 <th>Cuota</th>
                                 <th>Día Vcto.</th>
                                 <th>Estado {MONTH_NAMES[mes - 1]}</th>
+                                <th>Situación</th>
                                 <th>Acción</th>
                             </tr>
                         </thead>
                         <tbody>
                             {filteredAlumnos.length === 0 ? (
                                 <tr>
-                                    <td colSpan={8} style={{ textAlign: 'center', color: 'var(--text-dim)', padding: 'var(--space-xl)' }}>
+                                    <td colSpan={9} style={{ textAlign: 'center', color: 'var(--text-dim)', padding: 'var(--space-xl)' }}>
                                         No hay alumnos registrados. <a href="#/registrar">Registrá uno</a> o <a href="#/registrar">importá un Excel</a>.
                                     </td>
                                 </tr>
                             ) : filteredAlumnos.map((a) => {
-                                const estado = getEstadoPago(a.id);
+                                const estadoPago = getEstadoPago(a.id);
                                 const isSelected = seleccionados.includes(a.id);
+                                const estadoAlumno = a.estado || 'activo';
                                 return (
-                                    <tr key={a.id} style={{ background: isSelected ? 'rgba(34, 197, 94, 0.1)' : undefined }}>
+                                    <tr key={a.id} style={{ background: isSelected ? 'rgba(34, 197, 94, 0.1)' : estadoAlumno !== 'activo' ? 'rgba(100,100,100,0.1)' : undefined }}>
                                         <td style={{ textAlign: 'center' }}>
                                             <input 
                                                 type="checkbox" 
@@ -271,12 +274,34 @@ export default function Dashboard() {
                                             </span>
                                         </td>
                                         <td>
-                                            <span className={`badge ${estado}`}>
-                                                {estado === 'pagado' ? '✓ Pagado' : estado === 'vencido' ? '✗ Vencido' : '⏳ Pendiente'}
+                                            <span className={`badge ${estadoPago}`}>
+                                                {estadoPago === 'pagado' ? '✓ Pagado' : estadoPago === 'vencido' ? '✗ Vencido' : '⏳ Pendiente'}
                                             </span>
                                         </td>
+                                        <td>
+                                            <select 
+                                                className="form-select"
+                                                value={estadoAlumno}
+                                                onChange={(e) => updateAlumno(a.id, { estado: e.target.value as EstadoAlumno })}
+                                                style={{ 
+                                                    padding: '2px 6px', 
+                                                    fontSize: '0.75rem', 
+                                                    minWidth: 100,
+                                                    background: estadoAlumno === 'activo' ? 'rgba(34,197,94,0.1)' : 
+                                                               estadoAlumno === 'becado' ? 'rgba(168,85,247,0.1)' :
+                                                               estadoAlumno === 'suspendido' ? 'rgba(245,158,11,0.1)' : 'rgba(239,68,68,0.1)',
+                                                    borderColor: estadoAlumno === 'activo' ? 'rgba(34,197,94,0.3)' : 
+                                                                 estadoAlumno === 'becado' ? 'rgba(168,85,247,0.3)' :
+                                                                 estadoAlumno === 'suspendido' ? 'rgba(245,158,11,0.3)' : 'rgba(239,68,68,0.3)',
+                                                }}
+                                            >
+                                                {Object.entries(ESTADO_LABELS).map(([value, label]) => (
+                                                    <option key={value} value={value}>{label}</option>
+                                                ))}
+                                            </select>
+                                        </td>
                                         <td style={{ display: 'flex', gap: '4px' }}>
-                                            {estado !== 'pagado' ? (
+                                            {estadoPago !== 'pagado' ? (
                                                 <button className="btn btn-success" style={{ padding: '2px 10px', fontSize: '0.75rem' }}
                                                     onClick={() => marcarPagado(a.id, mes, anio)}>
                                                     ✓ Pagó

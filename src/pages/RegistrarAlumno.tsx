@@ -5,7 +5,8 @@ import MonthGrid from '../components/MonthGrid';
 import { showToast } from '../components/Toast';
 import { formatWhatsApp, formatCurrency, sendWhatsApp } from '../services/evolution';
 import { parseExcelFile } from '../services/spreadsheet';
-import type { Alumno } from '../types';
+import type { Alumno, EstadoAlumno } from '../types';
+import { ESTADO_LABELS } from '../types';
 
 export default function RegistrarAlumno() {
     const addAlumno = useStore((s) => s.addAlumno);
@@ -24,6 +25,7 @@ export default function RegistrarAlumno() {
     const [meses, setMeses] = useState<number[]>([currentMonth]);
     const [notas, setNotas] = useState('');
     const [diaVencimiento, setDiaVencimiento] = useState(new Date().getDate());
+    const [estado, setEstado] = useState<EstadoAlumno>('activo');
     const [loading, setLoading] = useState(false);
 
     // Import state
@@ -34,7 +36,7 @@ export default function RegistrarAlumno() {
     const fileRef = useRef<HTMLInputElement>(null);
 
     // Columns the parser recognizes
-    const KNOWN_COLS = ['nombre', 'name', 'nombres', 'first name', 'firstname', 'first_name', 'alumno', 'nombre completo', 'apellido y nombre', 'nombre y apellido', 'nombre apellido', 'apellido', 'apellidos', 'surname', 'last name', 'lastname', 'last_name', 'socio', 'cliente', 'estudiante', 'integrante', 'whatsapp', 'telefono', 'teléfono', 'tel', 'celular', 'phone', 'movil', 'móvil', 'contacto', 'numero', 'número', 'cel', 'num', 'tel/cel', 'email', 'correo', 'mail', 'plan', 'tipo de plan', 'categoria', 'categoría', 'modalidad', 'cuota', 'monto', 'precio', 'valor', 'importe', 'tarifa', 'mensualidad', 'nivel', 'cinturon', 'cinturón', 'belt', 'grado', 'faja', 'notas', 'observaciones', 'notes', 'comentarios', 'descripcion', 'obs'];
+    const KNOWN_COLS = ['nombre', 'name', 'nombres', 'first name', 'firstname', 'first_name', 'alumno', 'nombre completo', 'apellido y nombre', 'nombre y apellido', 'nombre apellido', 'apellido', 'apellidos', 'surname', 'last name', 'lastname', 'last_name', 'socio', 'cliente', 'estudiante', 'integrante', 'whatsapp', 'telefono', 'teléfono', 'tel', 'celular', 'phone', 'movil', 'móvil', 'contacto', 'numero', 'número', 'cel', 'num', 'tel/cel', 'email', 'correo', 'mail', 'plan', 'tipo de plan', 'categoria', 'categoría', 'modalidad', 'cuota', 'monto', 'precio', 'valor', 'importe', 'tarifa', 'mensualidad', 'nivel', 'cinturon', 'cinturón', 'belt', 'grado', 'faja', 'notas', 'observaciones', 'notes', 'comentarios', 'descripcion', 'obs', 'estado', 'situacion', 'situación', 'status'];
 
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
@@ -43,7 +45,7 @@ export default function RegistrarAlumno() {
         const formatted = formatWhatsApp(whatsapp);
         addAlumno({
             nombre, whatsapp: formatted, email, plan, cuota: parseInt(cuota) || 0,
-            nivel, notas, diaVencimiento,
+            nivel, notas, diaVencimiento, estado,
         });
 
         addActivity('sent', `Alumno registrado: ${nombre} (${plan === 'libre' ? 'Libre' : '3x Semana'})`);
@@ -63,7 +65,7 @@ export default function RegistrarAlumno() {
 
         setNombre(''); setWhatsapp(''); setEmail(''); setPlan('libre');
         setCuota(''); setNivel('blanco'); setMeses([currentMonth]); setNotas('');
-        setDiaVencimiento(new Date().getDate());
+        setDiaVencimiento(new Date().getDate()); setEstado('activo');
         setLoading(false);
     };
 
@@ -253,6 +255,18 @@ export default function RegistrarAlumno() {
                                 <option value="negro">⬛ Negro</option>
                             </select>
                         </div>
+                    </div>
+
+                    <div className="form-group">
+                        <label>Estado del Alumno</label>
+                        <select className="form-select" value={estado} onChange={(e) => setEstado(e.target.value as EstadoAlumno)}>
+                            {Object.entries(ESTADO_LABELS).map(([value, label]) => (
+                                <option key={value} value={value}>{label}</option>
+                            ))}
+                        </select>
+                        <p className="form-hint">
+                            Solo los alumnos "Activos" reciben recordatorios de pago automáticos.
+                        </p>
                     </div>
 
                     <h3 className="section-title mt-2">📅 Meses a Cobrar</h3>

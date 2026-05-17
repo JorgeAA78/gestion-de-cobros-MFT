@@ -1,5 +1,5 @@
 import * as XLSX from 'xlsx';
-import type { Alumno } from '../types';
+import type { Alumno, EstadoAlumno } from '../types';
 
 type RawRow = Record<string, string | number | undefined>;
 
@@ -37,6 +37,8 @@ const COLUMN_MAP: Record<string, keyof Omit<Alumno, 'id' | 'fechaRegistro'> | 'a
     // Notas
     notas: 'notas', observaciones: 'notas', notes: 'notas',
     comentarios: 'notas', descripcion: 'notas', obs: 'notas',
+    // Estado
+    estado: 'estado', situacion: 'estado', 'situación': 'estado', status: 'estado',
 };
 
 function mapColumnName(raw: string): string | null {
@@ -60,6 +62,14 @@ function normalizeNivel(val: string): Alumno['nivel'] {
     if (l.includes('marr') || l.includes('brown')) return 'marron';
     if (l.includes('negr') || l.includes('black')) return 'negro';
     return 'blanco';
+}
+
+function normalizeEstado(val: string): EstadoAlumno {
+    const l = val.toLowerCase().trim();
+    if (l.includes('beca') || l.includes('gratis') || l.includes('free')) return 'becado';
+    if (l.includes('suspen') || l.includes('pausa')) return 'suspendido';
+    if (l.includes('inact') || l.includes('baja')) return 'inactivo';
+    return 'activo';
 }
 
 export function parseExcelFile(
@@ -88,6 +98,7 @@ export function parseExcelFile(
                             plan: 'libre',
                             cuota: 0,
                             nivel: 'blanco',
+                            estado: 'activo',
                         };
                         let apellido = '';
 
@@ -104,6 +115,8 @@ export function parseExcelFile(
                                     alumno.whatsapp = String(value).replace(/\D/g, '');
                                 } else if (mappedKey === 'apellido') {
                                     apellido = String(value).trim();
+                                } else if (mappedKey === 'estado') {
+                                    alumno.estado = normalizeEstado(String(value));
                                 } else {
                                     alumno[mappedKey] = String(value);
                                 }
@@ -150,6 +163,7 @@ export function parseCSVText(
             plan: 'libre',
             cuota: 0,
             nivel: 'blanco',
+            estado: 'activo',
         };
         let apellido = '';
 
@@ -164,6 +178,8 @@ export function parseCSVText(
                     alumno.whatsapp = vals[idx].replace(/\D/g, '');
                 else if (key === 'apellido')
                     apellido = vals[idx].trim();
+                else if (key === 'estado')
+                    alumno.estado = normalizeEstado(vals[idx]);
                 else alumno[key] = vals[idx];
             }
         });

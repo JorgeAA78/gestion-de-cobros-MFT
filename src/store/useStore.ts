@@ -130,6 +130,7 @@ export const useStore = create<StoreState>()(
             addAlumno: (data) => {
                 const alumno: Alumno = {
                     ...data,
+                    estado: data.estado || 'activo',
                     id: `ALU-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
                     fechaRegistro: new Date().toISOString(),
                 };
@@ -156,6 +157,7 @@ export const useStore = create<StoreState>()(
             importAlumnos: (list) => {
                 const newAlumnos: Alumno[] = list.map((data, i) => ({
                     ...data,
+                    estado: data.estado || 'activo',
                     id: `ALU-${Date.now()}-${i}-${Math.random().toString(36).slice(2, 6)}`,
                     fechaRegistro: new Date().toISOString(),
                 }));
@@ -211,6 +213,8 @@ export const useStore = create<StoreState>()(
             getAlumnosPendientes: (mes, anio) => {
                 const { alumnos, pagos } = get();
                 return alumnos.filter((a) => {
+                    // Solo alumnos activos reciben recordatorios
+                    if (a.estado !== 'activo') return false;
                     const pago = pagos.find((p) => p.alumnoId === a.id && p.mes === mes && p.anio === anio);
                     return !pago || pago.estado !== 'pagado';
                 });

@@ -1,3 +1,5 @@
+export type EstadoAlumno = 'activo' | 'becado' | 'suspendido' | 'inactivo';
+
 export interface Alumno {
     id: string;
     nombre: string;
@@ -6,10 +8,18 @@ export interface Alumno {
     plan: 'libre' | '3x';
     cuota: number;
     nivel: 'blanco' | 'gris' | 'amarillo' | 'azul' | 'morado' | 'marron' | 'negro';
+    estado: EstadoAlumno; // activo = recibe recordatorios, otros = no recibe
     notas?: string;
     fechaRegistro: string;
     diaVencimiento?: number; // día del mes en que vence su cuota (1-31). Si no se define, usa diaEnvio global.
 }
+
+export const ESTADO_LABELS: Record<EstadoAlumno, string> = {
+    activo: '✅ Activo',
+    becado: '🎓 Becado',
+    suspendido: '⏸️ Suspendido',
+    inactivo: '❌ Inactivo',
+};
 
 export interface PagoMensual {
     alumnoId: string;
