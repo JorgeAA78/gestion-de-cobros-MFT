@@ -128,14 +128,33 @@ export const useStore = create<StoreState>()(
 
             // ─── Alumnos ──────────────────────────────────
             addAlumno: (data) => {
+                const tempId = `ALU-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
                 const alumno: Alumno = {
                     ...data,
                     estado: data.estado || 'activo',
-                    id: `ALU-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+                    id: tempId,
                     fechaRegistro: new Date().toISOString(),
                 };
                 set((s) => ({ alumnos: [...s.alumnos, alumno] }));
-                apiPost('/alumnos', alumno);
+
+                // Sincronizar el ID real de Supabase para que delete/update funcionen
+                fetch(`${API_BASE}/alumnos`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(alumno),
+                })
+                    .then((res) => res.json())
+                    .then((result) => {
+                        if (result.alumno?.id && result.alumno.id !== tempId) {
+                            set((s) => ({
+                                alumnos: s.alumnos.map((a) =>
+                                    a.id === tempId ? { ...a, id: result.alumno.id } : a
+                                ),
+                            }));
+                        }
+                    })
+                    .catch(() => {});
+
                 return alumno;
             },
 
@@ -162,7 +181,11 @@ export const useStore = create<StoreState>()(
                     fechaRegistro: new Date().toISOString(),
                 }));
                 set((s) => ({ alumnos: [...s.alumnos, ...newAlumnos] }));
-                apiPost('/alumnos/import', { alumnos: newAlumnos });
+
+                // Sincronizar IDs reales de Supabase después de importar
+                apiPost('/alumnos/import', { alumnos: newAlumnos })
+                    .then(() => get().syncFromServer());
+
                 return newAlumnos.length;
             },
 
