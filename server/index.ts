@@ -104,6 +104,8 @@ const DIA_VENCIMIENTO_DEFAULT = 10; // La mayoría vence el 10
 
 function getPendientes(alumnos: Alumno[], pagos: Pago[], mes: number, anio: number) {
     return alumnos.filter((a) => {
+        // Solo alumnos activos reciben recordatorios
+        if (a.estado && a.estado !== 'activo') return false;
         const pago = pagos.find((p) => p.alumnoId === a.id && p.mes === mes && p.anio === anio);
         return !pago || pago.estado !== 'pagado';
     });
@@ -114,18 +116,18 @@ function getAlumnosParaHoy(alumnos: Alumno[], diaActual: number, diasEnvio: numb
     if (!diasEnvio.includes(diaActual)) {
         return []; // No es día de envío
     }
-    
+
     const totalAlumnos = alumnos.length;
     const totalDias = diasEnvio.length;
     const alumnosPorDia = Math.ceil(totalAlumnos / totalDias);
-    
+
     // Índice del día actual
     const indiceDia = diasEnvio.indexOf(diaActual);
-    
+
     // Calcular rango de alumnos para hoy
     const inicio = indiceDia * alumnosPorDia;
     const fin = Math.min(inicio + alumnosPorDia, totalAlumnos);
-    
+
     return alumnos.slice(inicio, fin);
 }
 
@@ -192,7 +194,7 @@ async function envioAutomatico() {
 
     // Obtener todos los pendientes del mes (SOLO los que NO pagaron)
     let todosPendientes = getPendientes(data.alumnos, data.pagos, mes, anio);
-    
+
     if (todosPendientes.length === 0) {
         console.log(`✅ [CRON] No hay alumnos con pagos pendientes este mes.`);
         return;
@@ -208,10 +210,10 @@ async function envioAutomatico() {
             }
             return yaVencio;
         });
-        
+
         console.log(`📋 [CRON] Alumnos pendientes: ${todosPendientes.length}, Ya vencidos: ${pendientesVencidos.length}`);
         todosPendientes = pendientesVencidos;
-        
+
         if (todosPendientes.length === 0) {
             console.log(`✅ [CRON] Ningún alumno tiene cuota vencida aún.`);
             return;
@@ -222,10 +224,10 @@ async function envioAutomatico() {
     const yaEnviados = data.enviosRealizados as any[];
     const pendientesSinNotificar = todosPendientes.filter((a) => {
         // Buscar si ya recibió este tipo de recordatorio
-        return !yaEnviados.find((e) => 
-            e.alumnoId === a.id && 
-            e.mes === mes && 
-            e.anio === anio && 
+        return !yaEnviados.find((e) =>
+            e.alumnoId === a.id &&
+            e.mes === mes &&
+            e.anio === anio &&
             e.tipo === tipoEnvio
         );
     });
@@ -238,7 +240,7 @@ async function envioAutomatico() {
 
     // Obtener solo los alumnos que corresponden a hoy
     const alumnosHoy = getAlumnosParaHoy(pendientesSinNotificar, dia, diasEnvio);
-    
+
     if (alumnosHoy.length === 0) {
         console.log(`✅ [CRON] No hay alumnos asignados para enviar hoy (día ${dia}).`);
         return;
@@ -247,12 +249,12 @@ async function envioAutomatico() {
     const totalPendientes = pendientesSinNotificar.length;
     const alumnosPorDia = Math.ceil(totalPendientes / diasEnvio.length);
     const tipoTexto = esPrimerEnvio ? '1er RECORDATORIO' : '2do RECORDATORIO';
-    
+
     console.log(`📊 [CRON] ${tipoTexto}: ${totalPendientes} alumnos ÷ ${diasEnvio.length} días = ~${alumnosPorDia} por día`);
     console.log(`📱 [CRON] Día ${dia}: Enviando a ${alumnosHoy.length} alumnos...`);
 
     // Seleccionar template según tipo de envío
-    const template = esPrimerEnvio 
+    const template = esPrimerEnvio
         ? (config.mensajePlantilla || TEMPLATE_PRIMER_RECORDATORIO)
         : TEMPLATE_SEGUNDO_RECORDATORIO;
 
@@ -263,7 +265,7 @@ async function envioAutomatico() {
 
         // Usar el día de vencimiento individual del alumno
         const diaVenc = a.diaVencimiento ?? DIA_VENCIMIENTO_DEFAULT;
-        
+
         let msg = buildMessage(template, {
             nombre: a.nombre,
             monto: formatCurrency(a.cuota),
@@ -298,7 +300,7 @@ async function envioAutomatico() {
     localData.mensajesEnviados += sent;
     localData.enviosRealizados = data.enviosRealizados;
     writeDataLocal(localData);
-    
+
     await agregarActividad({
         type: 'sent',
         message: `🤖 [AUTO] ${tipoTexto} ${MONTHS[mes - 1]}: ${sent} enviados, ${failed} fallidos`,
@@ -465,21 +467,21 @@ app.post('/api/cron/trigger', async (_req, res) => {
 // POST test connection
 app.post('/api/whatsapp/test', async (req, res) => {
     const { apiUrl, apiKey, instance } = req.body;
-    
+
     // Limpiar URL (quitar /manager si existe)
     const cleanUrl = apiUrl.replace(/\/manager\/?$/, '').replace(/\/$/, '');
     const testUrl = `${cleanUrl}/instance/connectionState/${instance}`;
-    
+
     console.log(`🔍 [WhatsApp Test] URL: ${testUrl}`);
-    
+
     try {
         const response = await fetch(testUrl, {
             headers: { apikey: apiKey },
         });
-        
+
         const text = await response.text();
         console.log(`🔍 [WhatsApp Test] Response: ${response.status} - ${text.substring(0, 200)}`);
-        
+
         if (response.ok) {
             try {
                 const data = JSON.parse(text);
@@ -499,24 +501,24 @@ app.post('/api/whatsapp/test', async (req, res) => {
 // POST send whatsapp message
 app.post('/api/whatsapp/send', async (req, res) => {
     const { apiUrl, apiKey, instance, number, text } = req.body;
-    
+
     // Limpiar URL (quitar /manager si existe)
     const cleanUrl = apiUrl.replace(/\/manager\/?$/, '').replace(/\/$/, '');
     const sendUrl = `${cleanUrl}/message/sendText/${instance}`;
-    
+
     console.log(`📤 [WhatsApp Send] URL: ${sendUrl}`);
     console.log(`📤 [WhatsApp Send] To: ${number}`);
-    
+
     try {
         const response = await fetch(sendUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', apikey: apiKey },
             body: JSON.stringify({ number, text }),
         });
-        
+
         const responseText = await response.text();
         console.log(`📤 [WhatsApp Send] Response: ${response.status} - ${responseText.substring(0, 200)}`);
-        
+
         if (response.ok) {
             res.json({ success: true });
         } else {

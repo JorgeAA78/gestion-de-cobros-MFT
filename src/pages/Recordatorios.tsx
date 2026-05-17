@@ -22,6 +22,8 @@ a nombre de: Pablo Sebastian Echazu Bloser\n\n*Por favor, enviar comprobante al 
 
     const pendientes = useMemo(() => {
         return alumnos.filter((a) => {
+            // Solo alumnos activos reciben recordatorios
+            if (a.estado !== 'activo') return false;
             const pago = pagos.find((p) => p.alumnoId === a.id && p.mes === mes && p.anio === anio);
             return !pago || pago.estado !== 'pagado';
         });
