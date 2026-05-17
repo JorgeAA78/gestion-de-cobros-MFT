@@ -14,6 +14,7 @@ Sistema de gestión de cuotas y recordatorios automáticos por WhatsApp para aca
 - ☁️ **Base de datos en la nube** con Supabase
 - 🗑️ **Eliminación masiva** de alumnos
 - 📱 **Diseño responsivo** (móvil, tablet, desktop)
+- 🎓 **Estados de alumno** (activo, becado, suspendido, inactivo)
 
 ## 🛠️ Tecnologías
 
@@ -169,7 +170,45 @@ _Mutantes Fight Team - BJJ_
 - ✅ Delay aleatorio de **20-40 segundos** entre mensajes
 - ✅ Distribución de envíos en **5 días** (no todos el mismo día)
 - ✅ Máximo ~30 mensajes por día
-- ✅ Solo envía a alumnos con pagos pendientes
+- ✅ Solo envía a alumnos **activos** con pagos pendientes
+
+### 🎓 Estados de alumno
+| Estado | Recibe recordatorios |
+|--------|---------------------|
+| ✅ Activo | Sí |
+| 🎓 Becado | No |
+| ⏸️ Suspendido | No |
+| ❌ Inactivo | No |
+
+## 📊 Importar alumnos desde Excel
+
+### Columnas requeridas (mínimo)
+| Columna | Ejemplo |
+|---------|---------|
+| **Nombre** | Juan Pérez |
+| **WhatsApp** | 1123456789 |
+
+### Columnas opcionales
+| Columna | Valores válidos | Default |
+|---------|-----------------|---------|
+| **Apellido** | Pérez | - |
+| **Plan** | `libre`, `3x` | `libre` |
+| **Cuota** | `25000` | `0` |
+| **Nivel** | `blanco`, `azul`, `morado`, `marron`, `negro` | `blanco` |
+| **Estado** | `activo`, `becado`, `suspendido`, `inactivo` | `activo` |
+| **Email** | juan@email.com | - |
+| **Notas** | Observaciones | - |
+
+### Nombres de columna aceptados
+- **Nombre:** `nombre`, `name`, `alumno`, `nombre completo`, `socio`, `cliente`
+- **Apellido:** `apellido`, `apellidos`, `surname`, `last name`
+- **WhatsApp:** `whatsapp`, `telefono`, `celular`, `phone`, `tel`, `contacto`
+- **Plan:** `plan`, `tipo de plan`, `categoria`, `modalidad`
+- **Cuota:** `cuota`, `monto`, `precio`, `valor`, `mensualidad`
+- **Estado:** `estado`, `situacion`, `status`
+- **Nivel:** `nivel`, `cinturon`, `belt`, `grado`
+
+> 💡 El sistema detecta automáticamente las columnas por nombre, no importa el orden.
 
 ## 🔐 Autenticación
 
@@ -199,7 +238,7 @@ pnpm run build        # Build de producción
 pnpm run lint         # Verificar código
 ```
 
-## � Deploy en Railway
+## 🚀 Deploy en Railway
 
 1. Conectar repositorio de GitHub
 2. Agregar variables de entorno en Railway
@@ -214,6 +253,6 @@ pnpm run build:all
 pnpm run start
 ```
 
-## �📄 Licencia
+## 📄 Licencia
 
 MIT © Mutantes Fight Team
