@@ -16,6 +16,7 @@ import {
     crearAlumnosBulk,
     eliminarAlumno,
     eliminarAlumnosBulk,
+    actualizarAlumno,
     marcarPagado,
     marcarPendiente,
     agregarActividad,
@@ -359,6 +360,21 @@ app.post('/api/alumnos/import', async (req, res) => {
     } catch (error) {
         console.error('Error importando alumnos:', error);
         res.status(500).json({ error: 'Error al importar alumnos' });
+    }
+});
+
+// PUT alumno (update individual fields like estado)
+app.put('/api/alumnos/:id', async (req, res) => {
+    try {
+        const ok = await actualizarAlumno(req.params.id, req.body);
+        if (ok) {
+            res.json({ ok: true });
+        } else {
+            res.status(404).json({ error: 'Alumno no encontrado' });
+        }
+    } catch (error) {
+        console.error('Error actualizando alumno:', error);
+        res.status(500).json({ error: 'Error al actualizar alumno' });
     }
 });
 

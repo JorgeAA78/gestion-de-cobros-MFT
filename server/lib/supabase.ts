@@ -65,6 +65,7 @@ export interface DbAlumno {
     plan: 'libre' | '3x';
     cuota: number;
     dia_vencimiento: number;
+    estado: 'activo' | 'becado' | 'suspendido' | 'inactivo';
     activo: boolean;
     creado_en: string;
     actualizado_en: string;

@@ -143,7 +143,7 @@ export const useStore = create<StoreState>()(
                 set((s) => ({
                     alumnos: s.alumnos.map((a) => (a.id === id ? { ...a, ...data } : a)),
                 }));
-                get().pushToServer();
+                apiPut(`/alumnos/${id}`, data);
             },
 
             removeAlumno: (id) => {

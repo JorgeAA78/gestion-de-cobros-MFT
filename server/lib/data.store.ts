@@ -21,6 +21,7 @@ export interface Alumno {
     plan: 'libre' | '3x';
     cuota: number;
     diaVencimiento?: number;
+    estado: 'activo' | 'becado' | 'suspendido' | 'inactivo';
 }
 
 export interface Pago {
@@ -65,7 +66,8 @@ function dbToAlumno(db: DbAlumno): Alumno {
         whatsapp: db.whatsapp,
         plan: db.plan,
         cuota: db.cuota,
-        diaVencimiento: db.dia_vencimiento
+        diaVencimiento: db.dia_vencimiento,
+        estado: db.estado || 'activo'
     };
 }
 
@@ -136,7 +138,8 @@ export async function crearAlumno(alumno: Omit<Alumno, 'id'>): Promise<Alumno> {
                 whatsapp: alumno.whatsapp,
                 plan: alumno.plan,
                 cuota: alumno.cuota,
-                dia_vencimiento: alumno.diaVencimiento || 5
+                dia_vencimiento: alumno.diaVencimiento || 5,
+                estado: alumno.estado || 'activo'
             })
             .select()
             .single();
@@ -166,7 +169,8 @@ export async function crearAlumnosBulk(alumnos: Omit<Alumno, 'id'>[]): Promise<A
             whatsapp: a.whatsapp,
             plan: a.plan,
             cuota: a.cuota,
-            dia_vencimiento: a.diaVencimiento || 5
+            dia_vencimiento: a.diaVencimiento || 5,
+            estado: a.estado || 'activo'
         }));
         
         const { data, error } = await supabase
@@ -224,6 +228,38 @@ export async function eliminarAlumnosBulk(ids: string[]): Promise<boolean> {
     // Fallback JSON
     const store = readDataJSON();
     store.alumnos = store.alumnos.filter(a => !ids.includes(a.id));
+    writeDataJSON(store);
+    return true;
+}
+
+// ─── Funciones de Actualización de Alumno ───────────────────────────────────
+export async function actualizarAlumno(id: string, data: Partial<Omit<Alumno, 'id'>>): Promise<boolean> {
+    if (isSupabaseConfigured() && supabase) {
+        const updateData: Record<string, any> = {};
+        if (data.nombre !== undefined) updateData.nombre = data.nombre;
+        if (data.whatsapp !== undefined) updateData.whatsapp = data.whatsapp;
+        if (data.plan !== undefined) updateData.plan = data.plan;
+        if (data.cuota !== undefined) updateData.cuota = data.cuota;
+        if (data.diaVencimiento !== undefined) updateData.dia_vencimiento = data.diaVencimiento;
+        if (data.estado !== undefined) updateData.estado = data.estado;
+
+        const { error } = await supabase
+            .from('alumnos')
+            .update(updateData)
+            .eq('id', id);
+        
+        if (error) {
+            console.error('Error actualizando alumno:', error);
+            return false;
+        }
+        return true;
+    }
+
+    // Fallback JSON
+    const store = readDataJSON();
+    const index = store.alumnos.findIndex(a => a.id === id);
+    if (index === -1) return false;
+    store.alumnos[index] = { ...store.alumnos[index], ...data };
     writeDataJSON(store);
     return true;
 }
