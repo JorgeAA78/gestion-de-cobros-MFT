@@ -108,7 +108,9 @@ export default function Login() {
                         disabled={loading}
                     >
                         {loading ? (
-                            <span className="loading-spinner">⏳</span>
+                            <span className="loading-spinner">
+                                <img src="/escudo26.png" alt="Cargando..." className="loading-logo" />
+                            </span>
                         ) : (
                             'Ingresar'
                         )}

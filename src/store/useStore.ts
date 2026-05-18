@@ -153,7 +153,7 @@ export const useStore = create<StoreState>()(
                             }));
                         }
                     })
-                    .catch(() => {});
+                    .catch(() => { });
 
                 return alumno;
             },
