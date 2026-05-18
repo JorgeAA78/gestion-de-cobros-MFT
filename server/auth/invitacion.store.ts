@@ -58,7 +58,7 @@ function generarCodigoInvitacion(): string {
 export async function crearInvitacion(adminId: string, diasValidez: number = 7): Promise<Invitacion> {
     const ahora = new Date();
     const expiracion = new Date(ahora.getTime() + diasValidez * 24 * 60 * 60 * 1000);
-    
+
     if (isSupabaseConfigured() && supabase) {
         const { data, error } = await supabase
             .from('invitaciones')
@@ -70,14 +70,14 @@ export async function crearInvitacion(adminId: string, diasValidez: number = 7):
             })
             .select()
             .single();
-        
+
         if (error) {
             console.error('Error creando invitación en Supabase:', error);
             throw new Error('Error al crear invitación');
         }
         return dbToInvitacion(data);
     }
-    
+
     // Fallback JSON
     const store = readInvitaciones();
     const invitacion: Invitacion = {
@@ -90,7 +90,7 @@ export async function crearInvitacion(adminId: string, diasValidez: number = 7):
         usadoPor: null,
         usadoEn: null,
     };
-    
+
     store.invitaciones.push(invitacion);
     writeInvitaciones(store);
     return invitacion;
@@ -103,11 +103,11 @@ export async function buscarInvitacionPorCodigo(codigo: string): Promise<Invitac
             .select('*')
             .ilike('codigo', codigo)
             .single();
-        
+
         if (error || !data) return undefined;
         return dbToInvitacion(data);
     }
-    
+
     // Fallback JSON
     const store = readInvitaciones();
     return store.invitaciones.find(i => i.codigo.toUpperCase() === codigo.toUpperCase());
@@ -115,19 +115,19 @@ export async function buscarInvitacionPorCodigo(codigo: string): Promise<Invitac
 
 export async function validarInvitacion(codigo: string): Promise<{ valida: boolean; mensaje: string; invitacion?: Invitacion }> {
     const invitacion = await buscarInvitacionPorCodigo(codigo);
-    
+
     if (!invitacion) {
         return { valida: false, mensaje: 'Código de invitación no válido' };
     }
-    
+
     if (invitacion.usado) {
         return { valida: false, mensaje: 'Este código de invitación ya fue utilizado' };
     }
-    
+
     if (new Date(invitacion.expiraEn) < new Date()) {
         return { valida: false, mensaje: 'Este código de invitación ha expirado' };
     }
-    
+
     return { valida: true, mensaje: 'Código válido', invitacion };
 }
 
@@ -141,20 +141,20 @@ export async function marcarInvitacionUsada(codigo: string, email: string): Prom
                 usado_en: new Date().toISOString()
             })
             .ilike('codigo', codigo);
-        
+
         return !error;
     }
-    
+
     // Fallback JSON
     const store = readInvitaciones();
     const index = store.invitaciones.findIndex(i => i.codigo.toUpperCase() === codigo.toUpperCase());
-    
+
     if (index === -1) return false;
-    
+
     store.invitaciones[index].usado = true;
     store.invitaciones[index].usadoPor = email;
     store.invitaciones[index].usadoEn = new Date().toISOString();
-    
+
     writeInvitaciones(store);
     return true;
 }
@@ -165,11 +165,11 @@ export async function obtenerInvitaciones(): Promise<Invitacion[]> {
             .from('invitaciones')
             .select('*')
             .order('creado_en', { ascending: false });
-        
+
         if (error || !data) return [];
         return data.map(dbToInvitacion);
     }
-    
+
     // Fallback JSON
     const store = readInvitaciones();
     return store.invitaciones;
@@ -182,15 +182,15 @@ export async function obtenerInvitacionesActivas(): Promise<Invitacion[]> {
             .select('*')
             .eq('usado', false)
             .gt('expira_en', new Date().toISOString());
-        
+
         if (error || !data) return [];
         return data.map(dbToInvitacion);
     }
-    
+
     // Fallback JSON
     const store = readInvitaciones();
     const ahora = new Date();
-    return store.invitaciones.filter(i => 
+    return store.invitaciones.filter(i =>
         !i.usado && new Date(i.expiraEn) > ahora
     );
 }
@@ -201,16 +201,16 @@ export async function eliminarInvitacion(id: string): Promise<boolean> {
             .from('invitaciones')
             .delete()
             .eq('id', id);
-        
+
         return !error;
     }
-    
+
     // Fallback JSON
     const store = readInvitaciones();
     const index = store.invitaciones.findIndex(i => i.id === id);
-    
+
     if (index === -1) return false;
-    
+
     store.invitaciones.splice(index, 1);
     writeInvitaciones(store);
     return true;
