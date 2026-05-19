@@ -78,6 +78,7 @@ interface StoreState {
     
     // Recordatorios
     marcarRecordatorioEnviado: (alumnoId: string, mes: number, anio: number) => void;
+    toggleRecordatorioEnviado: (alumnoId: string, mes: number, anio: number) => void;
 }
 
 const DEFAULT_PLANTILLA = `¡Hola {nombre}! 👋🥋
@@ -293,6 +294,18 @@ export const useStore = create<StoreState>()(
                         [`${alumnoId}_${mes}_${anio}`]: new Date().toISOString(),
                     }
                 }));
+            },
+            toggleRecordatorioEnviado: (alumnoId, mes, anio) => {
+                set((s) => {
+                    const key = `${alumnoId}_${mes}_${anio}`;
+                    const next = { ...s.recordatoriosEnviados };
+                    if (next[key]) {
+                        delete next[key];
+                    } else {
+                        next[key] = new Date().toISOString();
+                    }
+                    return { recordatoriosEnviados: next };
+                });
             },
         }),
         { name: 'mft-store' }
