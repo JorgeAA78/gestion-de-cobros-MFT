@@ -18,7 +18,7 @@ export default function Recordatorios() {
 
     const [mes, setMes] = useState(mesCurrent);
     const [sending, setSending] = useState(false);
-    const [statuses, setStatuses] = useState<Record<string, 'pending' | 'sending' | 'sent' | 'error'>>({});
+    const [statuses, setStatuses] = useState<Record<string, 'pending' | 'sending' | 'sent' | 'error' | 'already_sent' | undefined>>({});
     const [template, setTemplate] = useState(config.mensajePlantilla || `¡Hola {nombre}! 👋 \n\nTe recordamos que la cuota de *{mes}* está pendiente:\n\n💰 Monto: *{monto}*\n📋 Plan: *{plan}*\n\nAlias: *mutantesbjj*
 a nombre de: Pablo Sebastian Echazu Bloser\n\n*Por favor, enviar comprobante al realizar el pago*\n\n¡Te esperamos en el tatami! 💪 \n\n_Mutantes Fight Team - BJJ_`);
 
