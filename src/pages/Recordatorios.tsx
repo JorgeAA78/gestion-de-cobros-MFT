@@ -10,6 +10,8 @@ export default function Recordatorios() {
     const config = useStore((s) => s.config);
     const addActivity = useStore((s) => s.addActivity);
     const incrementMensajes = useStore((s) => s.incrementMensajes);
+    const recordatoriosEnviados = useStore((s) => s.recordatoriosEnviados);
+    const marcarRecordatorioEnviado = useStore((s) => s.marcarRecordatorioEnviado);
     const now = new Date();
     const mesCurrent = now.getMonth() + 1;
     const anio = now.getFullYear();
@@ -37,7 +39,13 @@ a nombre de: Pablo Sebastian Echazu Bloser\n\n*Por favor, enviar comprobante al 
     };
 
     const handleSend = async () => {
-        if (pendientes.length === 0) return;
+        const paraEnviar = pendientes.filter(a => !recordatoriosEnviados[`${a.id}_${mes}_${anio}`]);
+        
+        if (paraEnviar.length === 0) {
+            showToast('✅ Todos los alumnos en esta lista ya recibieron su recordatorio este mes.', 'success');
+            return;
+        }
+
         if (!config.evolutionApiUrl || !config.evolutionApiKey || !config.evolutionInstance) {
             showToast('⚙️ Configurá Evolution API primero', 'warning');
             return;
@@ -45,13 +53,13 @@ a nombre de: Pablo Sebastian Echazu Bloser\n\n*Por favor, enviar comprobante al 
 
         setSending(true);
         const initialStatuses: Record<string, 'pending'> = {};
-        pendientes.forEach((a) => { initialStatuses[a.id] = 'pending'; });
+        paraEnviar.forEach((a) => { initialStatuses[a.id] = 'pending'; });
         setStatuses(initialStatuses);
 
         let sent = 0, failed = 0;
 
-        for (let i = 0; i < pendientes.length; i++) {
-            const a = pendientes[i];
+        for (let i = 0; i < paraEnviar.length; i++) {
+            const a = paraEnviar[i];
             setStatuses((s) => ({ ...s, [a.id]: 'sending' }));
 
             const msg = buildMessage(template, {
@@ -67,12 +75,13 @@ a nombre de: Pablo Sebastian Echazu Bloser\n\n*Por favor, enviar comprobante al 
             if (res.success) {
                 sent++;
                 setStatuses((s) => ({ ...s, [a.id]: 'sent' }));
+                marcarRecordatorioEnviado(a.id, mes, anio);
             } else {
                 failed++;
                 setStatuses((s) => ({ ...s, [a.id]: 'error' }));
             }
 
-            if (i < pendientes.length - 1) await randomDelay();
+            if (i < paraEnviar.length - 1) await randomDelay();
         }
 
         incrementMensajes(sent);
@@ -168,6 +177,9 @@ a nombre de: Pablo Sebastian Echazu Bloser\n\n*Por favor, enviar comprobante al 
                                     </tr>
                                 ) : pendientes.map((a, i) => {
                                     const st = statuses[a.id];
+                                    const yaEnviado = recordatoriosEnviados[`${a.id}_${mes}_${anio}`];
+                                    const displayStatus = st || (yaEnviado ? 'already_sent' : 'pending');
+                                    
                                     return (
                                         <tr key={a.id}>
                                             <td>{i + 1}</td>
@@ -176,10 +188,11 @@ a nombre de: Pablo Sebastian Echazu Bloser\n\n*Por favor, enviar comprobante al 
                                             <td>{a.plan === 'libre' ? '🔥 Libre' : '💪 3x'}</td>
                                             <td>{formatCurrency(a.cuota)}</td>
                                             <td>
-                                                <span className={`badge ${st === 'sent' ? 'pagado' : st === 'error' ? 'vencido' : 'pendiente'}`}>
-                                                    {st === 'sending' ? '⏳ Enviando...' :
-                                                        st === 'sent' ? '✓ Enviado' :
-                                                            st === 'error' ? '✗ Error' : '⏳ Pendiente'}
+                                                <span className={`badge ${displayStatus === 'sent' || displayStatus === 'already_sent' ? 'pagado' : displayStatus === 'error' ? 'vencido' : 'pendiente'}`}>
+                                                    {displayStatus === 'sending' ? '⏳ Enviando...' :
+                                                        displayStatus === 'sent' ? '✓ Enviado recién' :
+                                                        displayStatus === 'already_sent' ? '✓ Ya enviado' :
+                                                        displayStatus === 'error' ? '✗ Error' : '⏳ Pendiente de envío'}
                                                 </span>
                                             </td>
                                         </tr>
@@ -192,9 +205,9 @@ a nombre de: Pablo Sebastian Echazu Bloser\n\n*Por favor, enviar comprobante al 
 
                 <div className="btn-group mt-2">
                     <button className="btn btn-success btn-lg btn-block"
-                        disabled={pendientes.length === 0 || sending}
+                        disabled={pendientes.length === 0 || sending || pendientes.every(a => recordatoriosEnviados[`${a.id}_${mes}_${anio}`])}
                         onClick={handleSend}>
-                        {sending ? '⏳ Enviando...' : `📱 Enviar Recordatorios a ${pendientes.length} Alumnos`}
+                        {sending ? '⏳ Enviando...' : `📱 Enviar Recordatorios (${pendientes.filter(a => !recordatoriosEnviados[`${a.id}_${mes}_${anio}`]).length} nuevos)`}
                     </button>
                 </div>
 

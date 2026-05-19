@@ -46,6 +46,7 @@ interface StoreState {
     config: AppConfig;
     activity: ActivityLog[];
     mensajesEnviados: number;
+    recordatoriosEnviados: Record<string, string>;
     synced: boolean;
 
     // Init
@@ -74,6 +75,9 @@ interface StoreState {
     // Stats
     getStats: () => { totalAlumnos: number; mensajesEnviados: number; cuotasPendientes: number; totalRecaudado: number; };
     incrementMensajes: (count?: number) => void;
+    
+    // Recordatorios
+    marcarRecordatorioEnviado: (alumnoId: string, mes: number, anio: number) => void;
 }
 
 const DEFAULT_PLANTILLA = `¡Hola {nombre}! 👋🥋
@@ -104,6 +108,7 @@ export const useStore = create<StoreState>()(
             },
             activity: [],
             mensajesEnviados: 0,
+            recordatoriosEnviados: {},
             synced: false,
 
             // ─── Sync with server ─────────────────────────
@@ -278,6 +283,16 @@ export const useStore = create<StoreState>()(
                     cuotasPendientes: pendientes.length,
                     totalRecaudado,
                 };
+            },
+            
+            // ─── Recordatorios ────────────────────────────
+            marcarRecordatorioEnviado: (alumnoId, mes, anio) => {
+                set((s) => ({
+                    recordatoriosEnviados: {
+                        ...s.recordatoriosEnviados,
+                        [`${alumnoId}_${mes}_${anio}`]: new Date().toISOString(),
+                    }
+                }));
             },
         }),
         { name: 'mft-store' }
