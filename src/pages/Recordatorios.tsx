@@ -30,7 +30,7 @@ a nombre de: Pablo Sebastian Echazu Bloser\n\n*Por favor, enviar comprobante al 
     }, [alumnos, pagos, mes, anio]);
 
     const randomDelay = () => {
-        const min = 20.0;
+        const min = 30.0;
         const max = 40.0;
         const sec = parseFloat((Math.random() * (max - min) + min).toFixed(2));
         return new Promise<void>((r) => setTimeout(r, sec * 1000));
@@ -200,7 +200,7 @@ a nombre de: Pablo Sebastian Echazu Bloser\n\n*Por favor, enviar comprobante al 
 
                 <div className="card mt-2" style={{ borderLeft: '3px solid var(--accent-green)' }}>
                     <p style={{ color: 'var(--text-dim)', fontSize: '0.85rem' }}>
-                        💡 Los mensajes se envían con 3 segundos de intervalo para evitar bloqueos de WhatsApp.
+                        💡 Los mensajes se envían con un intervalo aleatorio de entre 30 y 40 segundos para evitar bloqueos de WhatsApp.
                         Solo se envía a quienes <strong>no tienen el pago marcado como "Pagado"</strong> en el mes seleccionado.
                     </p>
                 </div>
