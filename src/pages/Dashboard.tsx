@@ -57,6 +57,7 @@ export default function Dashboard() {
 
     // ── Modal de edición ─────────────────────────────────────
     const [editAlumno, setEditAlumno] = useState<Alumno | null>(null);
+    const [editNombre, setEditNombre] = useState('');
     const [editWhatsapp, setEditWhatsapp] = useState('');
     const [editCuota, setEditCuota] = useState('');
     const [editDiaVenc, setEditDiaVenc] = useState(5);
@@ -65,6 +66,7 @@ export default function Dashboard() {
 
     const openEdit = (a: Alumno) => {
         setEditAlumno(a);
+        setEditNombre(a.nombre);
         setEditWhatsapp(a.whatsapp);
         setEditCuota(String(a.cuota));
         setEditDiaVenc(a.diaVencimiento ?? config.diaEnvio ?? 5);
@@ -78,13 +80,14 @@ export default function Dashboard() {
         if (!editAlumno) return;
         const cuotaNum = parseInt(editCuota) || 0;
         updateAlumno(editAlumno.id, {
+            nombre: editNombre.trim() || editAlumno.nombre,
             whatsapp: editWhatsapp.trim(),
             cuota: cuotaNum,
             diaVencimiento: editDiaVenc,
             plan: editPlan,
             estado: editEstado,
         });
-        showToast(`✅ Alumno ${editAlumno.nombre} actualizado`, 'success');
+        showToast(`✅ Alumno ${editNombre.trim() || editAlumno.nombre} actualizado`, 'success');
         closeEdit();
     };
 
@@ -334,30 +337,40 @@ export default function Dashboard() {
                                                 ))}
                                             </select>
                                         </td>
-                                        <td style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-                                            {estadoPago !== 'pagado' ? (
-                                                <button className="btn btn-success" style={{ padding: '2px 10px', fontSize: '0.75rem' }}
-                                                    onClick={() => marcarPagado(a.id, mes, anio)}>
-                                                    ✓ Pagó
+                                        <td style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                            <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                                                {estadoPago !== 'pagado' ? (
+                                                    <button className="btn btn-success" style={{ padding: '2px 10px', fontSize: '0.75rem' }}
+                                                        onClick={() => marcarPagado(a.id, mes, anio)}>
+                                                        ✓ Pagó
+                                                    </button>
+                                                ) : (
+                                                    <button className="btn btn-secondary" style={{ padding: '2px 10px', fontSize: '0.75rem' }}
+                                                        onClick={() => marcarPendiente(a.id, mes, anio)}>
+                                                        ↩ Deshacer
+                                                    </button>
+                                                )}
+                                                <button
+                                                    className="btn btn-secondary"
+                                                    style={{ padding: '2px 10px', fontSize: '0.75rem', background: 'rgba(59,130,246,0.12)', color: '#60a5fa', borderColor: 'rgba(59,130,246,0.3)' }}
+                                                    title="Editar alumno"
+                                                    onClick={() => openEdit(a)}
+                                                >
+                                                    ✏️
                                                 </button>
-                                            ) : (
-                                                <button className="btn btn-secondary" style={{ padding: '2px 10px', fontSize: '0.75rem' }}
-                                                    onClick={() => marcarPendiente(a.id, mes, anio)}>
-                                                    ↩ Deshacer
+                                                <button className="btn btn-secondary" style={{ padding: '2px 10px', fontSize: '0.75rem', background: 'rgba(239,68,68,0.1)', color: '#ef4444', borderColor: 'rgba(239,68,68,0.3)' }}
+                                                    onClick={() => { if (window.confirm(`¿Estás seguro de eliminar a ${a.nombre}? Esta acción no se puede deshacer.`)) removeAlumno(a.id) }}>
+                                                    🗑️
                                                 </button>
-                                            )}
-                                            <button
-                                                className="btn btn-secondary"
-                                                style={{ padding: '2px 10px', fontSize: '0.75rem', background: 'rgba(59,130,246,0.12)', color: '#60a5fa', borderColor: 'rgba(59,130,246,0.3)' }}
-                                                title="Editar alumno"
-                                                onClick={() => openEdit(a)}
-                                            >
-                                                ✏️
-                                            </button>
-                                            <button className="btn btn-secondary" style={{ padding: '2px 10px', fontSize: '0.75rem', background: 'rgba(239,68,68,0.1)', color: '#ef4444', borderColor: 'rgba(239,68,68,0.3)' }}
-                                                onClick={() => { if (window.confirm(`¿Estás seguro de eliminar a ${a.nombre}? Esta acción no se puede deshacer.`)) removeAlumno(a.id) }}>
-                                                🗑️
-                                            </button>
+                                            </div>
+                                            <input
+                                                type="text"
+                                                className="form-input"
+                                                style={{ padding: '2px 6px', fontSize: '0.75rem', margin: 0, height: 24, width: '100%', minWidth: 150 }}
+                                                placeholder="Notas (ej. inasistencia)..."
+                                                value={a.notas || ''}
+                                                onChange={(e) => updateAlumno(a.id, { notas: e.target.value })}
+                                            />
                                         </td>
                                     </tr>
                                 );
@@ -418,6 +431,18 @@ export default function Dashboard() {
                                 style={{ background: 'none', border: 'none', color: 'rgba(134,239,172,0.5)', fontSize: '1.4rem', cursor: 'pointer', lineHeight: 1, padding: 4 }}
                                 title="Cerrar"
                             >✕</button>
+                        </div>
+
+                        {/* Nombre */}
+                        <div className="form-group" style={{ marginBottom: 'var(--space-md)' }}>
+                            <label>👤 Nombre</label>
+                            <input
+                                type="text"
+                                className="form-input"
+                                value={editNombre}
+                                onChange={(e) => setEditNombre(e.target.value)}
+                                placeholder="Nombre completo"
+                            />
                         </div>
 
                         {/* WhatsApp */}

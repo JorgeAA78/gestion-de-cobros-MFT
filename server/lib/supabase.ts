@@ -66,6 +66,7 @@ export interface DbAlumno {
     cuota: number;
     dia_vencimiento: number;
     estado: 'activo' | 'becado' | 'suspendido' | 'inactivo';
+    notas?: string | null;
     activo: boolean;
     creado_en: string;
     actualizado_en: string;

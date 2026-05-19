@@ -22,6 +22,7 @@ export interface Alumno {
     cuota: number;
     diaVencimiento?: number;
     estado: 'activo' | 'becado' | 'suspendido' | 'inactivo';
+    notas?: string;
 }
 
 export interface Pago {
@@ -67,7 +68,8 @@ function dbToAlumno(db: DbAlumno): Alumno {
         plan: db.plan,
         cuota: db.cuota,
         diaVencimiento: db.dia_vencimiento,
-        estado: db.estado || 'activo'
+        estado: db.estado || 'activo',
+        notas: db.notas || undefined
     };
 }
 
@@ -139,7 +141,8 @@ export async function crearAlumno(alumno: Omit<Alumno, 'id'>): Promise<Alumno> {
                 plan: alumno.plan,
                 cuota: alumno.cuota,
                 dia_vencimiento: alumno.diaVencimiento || 5,
-                estado: alumno.estado || 'activo'
+                estado: alumno.estado || 'activo',
+                notas: alumno.notas
             })
             .select()
             .single();
@@ -170,7 +173,8 @@ export async function crearAlumnosBulk(alumnos: Omit<Alumno, 'id'>[]): Promise<A
             plan: a.plan,
             cuota: a.cuota,
             dia_vencimiento: a.diaVencimiento || 5,
-            estado: a.estado || 'activo'
+            estado: a.estado || 'activo',
+            notas: a.notas
         }));
         
         const { data, error } = await supabase
@@ -242,6 +246,7 @@ export async function actualizarAlumno(id: string, data: Partial<Omit<Alumno, 'i
         if (data.cuota !== undefined) updateData.cuota = data.cuota;
         if (data.diaVencimiento !== undefined) updateData.dia_vencimiento = data.diaVencimiento;
         if (data.estado !== undefined) updateData.estado = data.estado;
+        if (data.notas !== undefined) updateData.notas = data.notas;
 
         const { error } = await supabase
             .from('alumnos')
