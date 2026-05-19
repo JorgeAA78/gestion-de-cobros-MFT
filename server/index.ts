@@ -22,6 +22,8 @@ import {
     agregarActividad,
     obtenerConfig,
     guardarConfig,
+    registrarRecordatorioEnviado,
+    eliminarRecordatorioEnviado,
     type DataStore,
     type Alumno,
     type Pago
@@ -448,6 +450,30 @@ app.post('/api/mensajes/increment', (req, res) => {
     data.mensajesEnviados += req.body.count || 1;
     writeDataLocal(data);
     res.json({ ok: true, total: data.mensajesEnviados });
+});
+
+// POST recordatorios
+app.post('/api/recordatorios', async (req, res) => {
+    try {
+        const { alumnoId, mes, anio } = req.body;
+        await registrarRecordatorioEnviado(alumnoId, mes, anio);
+        res.json({ ok: true });
+    } catch (error) {
+        console.error('Error registrando recordatorio:', error);
+        res.status(500).json({ error: 'Error al registrar recordatorio' });
+    }
+});
+
+// DELETE recordatorios
+app.delete('/api/recordatorios/:alumnoId/:mes/:anio', async (req, res) => {
+    try {
+        const { alumnoId, mes, anio } = req.params;
+        await eliminarRecordatorioEnviado(alumnoId, parseInt(mes), parseInt(anio));
+        res.json({ ok: true });
+    } catch (error) {
+        console.error('Error eliminando recordatorio:', error);
+        res.status(500).json({ error: 'Error al eliminar recordatorio' });
+    }
 });
 
 // GET envios realizados (for frontend info)

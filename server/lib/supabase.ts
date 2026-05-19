@@ -88,3 +88,11 @@ export interface DbActividad {
     mensaje: string;
     timestamp: string;
 }
+
+export interface DbRecordatorioEnviado {
+    id: string;
+    alumno_id: string;
+    mes: number;
+    anio: number;
+    fecha_envio: string;
+}

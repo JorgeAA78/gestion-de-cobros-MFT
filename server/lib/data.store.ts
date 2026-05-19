@@ -2,7 +2,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { supabase, isSupabaseConfigured, DbAlumno, DbPago, DbActividad } from './supabase.js';
+import { supabase, isSupabaseConfigured, DbAlumno, DbPago, DbActividad, DbRecordatorioEnviado } from './supabase.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -428,14 +428,74 @@ export async function guardarConfig(config: Config): Promise<void> {
     writeDataJSON(store);
 }
 
-// ─── Función para obtener todo (compatibilidad) ─────────────────────────────
-export async function obtenerTodo(): Promise<DataStore> {
+// ─── Funciones de Recordatorios Enviados ────────────────────────────────────
+export async function obtenerRecordatoriosEnviados(): Promise<Record<string, string>> {
     if (isSupabaseConfigured() && supabase) {
-        const [alumnos, pagos, activity, config] = await Promise.all([
+        const { data, error } = await supabase
+            .from('recordatorios_enviados')
+            .select('*');
+        if (error) {
+            console.error('Error obteniendo recordatorios:', error);
+            return {};
+        }
+        const map: Record<string, string> = {};
+        for (const r of data) {
+            map[`${r.alumno_id}_${r.mes}_${r.anio}`] = r.fecha_envio;
+        }
+        return map;
+    }
+    // Fallback JSON
+    const store = readDataJSON();
+    const map: Record<string, string> = {};
+    for (const r of store.enviosRealizados || []) {
+        if (r.alumnoId) map[`${r.alumnoId}_${r.mes}_${r.anio}`] = r.fecha;
+    }
+    return map;
+}
+
+export async function registrarRecordatorioEnviado(alumnoId: string, mes: number, anio: number): Promise<void> {
+    if (isSupabaseConfigured() && supabase) {
+        const { error } = await supabase.from('recordatorios_enviados')
+            .upsert({ alumno_id: alumnoId, mes, anio, fecha_envio: new Date().toISOString() }, { onConflict: 'alumno_id,mes,anio' });
+        if (error) console.error('Error registrando recordatorio:', error);
+        return;
+    }
+    const store = readDataJSON();
+    if (!store.enviosRealizados) store.enviosRealizados = [];
+    const index = store.enviosRealizados.findIndex(r => r.alumnoId === alumnoId && r.mes === mes && r.anio === anio);
+    if (index >= 0) {
+        store.enviosRealizados[index].fecha = new Date().toISOString();
+    } else {
+        store.enviosRealizados.push({ alumnoId, mes, anio, fecha: new Date().toISOString() });
+    }
+    writeDataJSON(store);
+}
+
+export async function eliminarRecordatorioEnviado(alumnoId: string, mes: number, anio: number): Promise<void> {
+    if (isSupabaseConfigured() && supabase) {
+        const { error } = await supabase.from('recordatorios_enviados')
+            .delete()
+            .eq('alumno_id', alumnoId)
+            .eq('mes', mes)
+            .eq('anio', anio);
+        if (error) console.error('Error eliminando recordatorio:', error);
+        return;
+    }
+    const store = readDataJSON();
+    if (!store.enviosRealizados) return;
+    store.enviosRealizados = store.enviosRealizados.filter(r => !(r.alumnoId === alumnoId && r.mes === mes && r.anio === anio));
+    writeDataJSON(store);
+}
+
+// ─── Función para obtener todo (compatibilidad) ─────────────────────────────
+export async function obtenerTodo(): Promise<any> {
+    if (isSupabaseConfigured() && supabase) {
+        const [alumnos, pagos, activity, config, recordatoriosEnviados] = await Promise.all([
             obtenerAlumnos(),
             obtenerPagos(),
             obtenerActividad(),
-            obtenerConfig()
+            obtenerConfig(),
+            obtenerRecordatoriosEnviados()
         ]);
         
         // mensajesEnviados y enviosRealizados se mantienen en JSON por ahora
@@ -447,10 +507,16 @@ export async function obtenerTodo(): Promise<DataStore> {
             activity,
             config,
             mensajesEnviados: jsonData.mensajesEnviados,
-            enviosRealizados: jsonData.enviosRealizados
+            enviosRealizados: jsonData.enviosRealizados,
+            recordatoriosEnviados
         };
     }
-    return readDataJSON();
+    const data = readDataJSON();
+    const recordatoriosEnviados: Record<string, string> = {};
+    for (const r of data.enviosRealizados || []) {
+        if (r.alumnoId) recordatoriosEnviados[`${r.alumnoId}_${r.mes}_${r.anio}`] = r.fecha;
+    }
+    return { ...data, recordatoriosEnviados };
 }
 
 // ─── Función para sincronizar todo (compatibilidad) ─────────────────────────

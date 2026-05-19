@@ -122,6 +122,7 @@ export const useStore = create<StoreState>()(
                         config: data.config || get().config,
                         activity: data.activity || [],
                         mensajesEnviados: data.mensajesEnviados || 0,
+                        recordatoriosEnviados: data.recordatoriosEnviados || get().recordatoriosEnviados,
                         synced: true,
                     });
                 }
@@ -294,10 +295,13 @@ export const useStore = create<StoreState>()(
                         [`${alumnoId}_${mes}_${anio}`]: new Date().toISOString(),
                     }
                 }));
+                apiPost('/recordatorios', { alumnoId, mes, anio });
             },
             toggleRecordatorioEnviado: (alumnoId, mes, anio) => {
+                const key = `${alumnoId}_${mes}_${anio}`;
+                const wasSent = !!get().recordatoriosEnviados[key];
+                
                 set((s) => {
-                    const key = `${alumnoId}_${mes}_${anio}`;
                     const next = { ...s.recordatoriosEnviados };
                     if (next[key]) {
                         delete next[key];
@@ -306,6 +310,12 @@ export const useStore = create<StoreState>()(
                     }
                     return { recordatoriosEnviados: next };
                 });
+
+                if (wasSent) {
+                    apiDelete(`/recordatorios/${alumnoId}/${mes}/${anio}`);
+                } else {
+                    apiPost('/recordatorios', { alumnoId, mes, anio });
+                }
             },
         }),
         { name: 'mft-store' }
