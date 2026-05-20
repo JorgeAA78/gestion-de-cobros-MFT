@@ -32,16 +32,21 @@ a nombre de: Pablo Sebastian Echazu Bloser\n\n*Por favor, enviar comprobante al 
         });
     }, [alumnos, pagos, mes, anio]);
 
-    const randomDelay = () => {
-        const min = 30.0;
-        const max = 40.0;
-        const sec = parseFloat((Math.random() * (max - min) + min).toFixed(2));
+    const randomDelay = (index: number) => {
+        // Cada 10 mensajes, pausa más larga (5-8 min)
+        if (index > 0 && index % 10 === 0) {
+            const sec = Math.floor(Math.random() * (480 - 300 + 1)) + 300;
+            showToast(`⏸️ Pausa larga entre lotes... (${Math.round(sec/60)} min)`, 'info');
+            return new Promise<void>((r) => setTimeout(r, sec * 1000));
+        }
+        // Delay normal entre mensajes
+        const sec = Math.floor(Math.random() * (240 - 120 + 1)) + 120;
         return new Promise<void>((r) => setTimeout(r, sec * 1000));
     };
 
     const handleSend = async () => {
-        // Limitar envíos a un lote máximo de 30 para evitar bloqueos
-        const MAX_LOTE = 30;
+        // Limitar envíos a un lote máximo de 20 para evitar bloqueos
+        const MAX_LOTE = 20;
         const paraEnviar = pendientes
             .filter(a => !recordatoriosEnviados[`${a.id}_${mes}_${anio}`])
             .slice(0, MAX_LOTE);
@@ -86,7 +91,7 @@ a nombre de: Pablo Sebastian Echazu Bloser\n\n*Por favor, enviar comprobante al 
                 setStatuses((s) => ({ ...s, [a.id]: 'error' }));
             }
 
-            if (i < paraEnviar.length - 1) await randomDelay();
+            if (i < paraEnviar.length - 1) await randomDelay(i + 1);
         }
 
         incrementMensajes(sent);
@@ -217,14 +222,14 @@ a nombre de: Pablo Sebastian Echazu Bloser\n\n*Por favor, enviar comprobante al 
                     <button className="btn btn-success btn-lg btn-block"
                         disabled={pendientes.length === 0 || sending || pendientes.filter(a => !recordatoriosEnviados[`${a.id}_${mes}_${anio}`]).length === 0}
                         onClick={handleSend}>
-                        {sending ? '⏳ Enviando...' : `📱 Enviar Recordatorios (${Math.min(30, pendientes.filter(a => !recordatoriosEnviados[`${a.id}_${mes}_${anio}`]).length)} de ${pendientes.filter(a => !recordatoriosEnviados[`${a.id}_${mes}_${anio}`]).length} pendientes)`}
+                        {sending ? '⏳ Enviando...' : `📱 Enviar Recordatorios (${Math.min(MAX_LOTE, pendientes.filter(a => !recordatoriosEnviados[`${a.id}_${mes}_${anio}`]).length)} de ${pendientes.filter(a => !recordatoriosEnviados[`${a.id}_${mes}_${anio}`]).length} pendientes)`}
                     </button>
                 </div>
 
                 <div className="card mt-2" style={{ borderLeft: '3px solid var(--accent-green)' }}>
                     <p style={{ color: 'var(--text-dim)', fontSize: '0.85rem' }}>
-                        💡 Los mensajes se envían con un intervalo aleatorio de entre 30 y 40 segundos para evitar bloqueos de WhatsApp.
-                        Se procesan en <strong>lotes de hasta 30 mensajes</strong> por envío.<br/>
+                        💡 Los mensajes se envían con un intervalo aleatorio de entre 2 y 4 minutos, con una pausa de 5 a 8 minutos cada 10 mensajes para evitar bloqueos de WhatsApp.
+                        Se procesan en <strong>lotes de hasta 20 mensajes</strong> por envío.<br/>
                         <em>Tip: Podés hacer clic en el estado "⏳ Pendiente" de un alumno para marcarlo manualmente como enviado si ya le avisaste antes.</em>
                     </p>
                 </div>

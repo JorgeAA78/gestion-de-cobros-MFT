@@ -89,10 +89,15 @@ function formatCurrency(n: number) {
 
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-function randomDelay() {
-    const min = 20.0;
-    const max = 40.0;
-    const sec = parseFloat((Math.random() * (max - min) + min).toFixed(2));
+function randomDelay(index: number) {
+    // Cada 10 mensajes, pausa más larga (5-8 min)
+    if (index > 0 && index % 10 === 0) {
+        const sec = Math.floor(Math.random() * (480 - 300 + 1)) + 300;
+        console.log(`  ⏸️ Pausa larga entre lotes... (${Math.round(sec/60)} min)`);
+        return delay(sec * 1000);
+    }
+    // Delay normal entre mensajes
+    const sec = Math.floor(Math.random() * (240 - 120 + 1)) + 120;
     console.log(`  ⏳ Esperando ${sec}s antes del próximo mensaje...`);
     return delay(sec * 1000);
 }
@@ -294,7 +299,7 @@ async function envioAutomatico() {
         }
 
         // Delay anti-spam entre mensajes
-        if (i < alumnosHoy.length - 1) await randomDelay();
+        if (i < alumnosHoy.length - 1) await randomDelay(i + 1);
     }
 
     // Guardar envíos y actividad
