@@ -17,6 +17,8 @@ export default function Recordatorios() {
     const mesCurrent = now.getMonth() + 1;
     const anio = now.getFullYear();
 
+    const MAX_LOTE = 20;
+
     const [mes, setMes] = useState(mesCurrent);
     const [sending, setSending] = useState(false);
     const [statuses, setStatuses] = useState<Record<string, 'pending' | 'sending' | 'sent' | 'error' | 'already_sent' | undefined>>({});
@@ -45,8 +47,6 @@ a nombre de: Pablo Sebastian Echazu Bloser\n\n*Por favor, enviar comprobante al 
     };
 
     const handleSend = async () => {
-        // Limitar envíos a un lote máximo de 20 para evitar bloqueos
-        const MAX_LOTE = 20;
         const paraEnviar = pendientes
             .filter(a => !recordatoriosEnviados[`${a.id}_${mes}_${anio}`])
             .slice(0, MAX_LOTE);

@@ -167,9 +167,9 @@ _Mutantes Fight Team - BJJ_
 ```
 
 ### 🛡️ Protección anti-baneo
-- ✅ Delay aleatorio de **20-40 segundos** entre mensajes
+- ✅ Delay aleatorio de **2 a 4 minutos** entre mensajes (con pausa de 5 a 8 minutos cada 10 mensajes)
 - ✅ Distribución de envíos en **5 días** (no todos el mismo día)
-- ✅ Máximo ~30 mensajes por día
+- ✅ Máximo ~20 mensajes por lote
 - ✅ Solo envía a alumnos **activos** con pagos pendientes
 
 ### 🎓 Estados de alumno
