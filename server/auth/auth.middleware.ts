@@ -9,6 +9,10 @@ dotenv.config();
 // En producción, exigir que JWT_SECRET esté definido y no sea el valor por defecto
 if (process.env.NODE_ENV === 'production' && (!process.env.JWT_SECRET || process.env.JWT_SECRET === 'mutantes-fight-team-secret-key-2024')) {
     console.error('FATAL: JWT_SECRET environment variable is missing or insecure in production!');
+    console.error(`JWT_SECRET status: ${process.env.JWT_SECRET ? `DEFINED (Length: ${process.env.JWT_SECRET.length})` : 'UNDEFINED OR EMPTY'}`);
+    if (process.env.JWT_SECRET === 'mutantes-fight-team-secret-key-2024') {
+        console.error('Error: JWT_SECRET has the default insecure value ("mutantes-fight-team-secret-key-2024"). Please change it in the Railway dashboard to a secure custom string.');
+    }
     process.exit(1);
 }
 
