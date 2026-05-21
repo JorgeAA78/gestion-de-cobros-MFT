@@ -10,7 +10,8 @@ Sistema de gestión de cuotas y recordatorios automáticos por WhatsApp para aca
 - 👥 **Gestión de alumnos** con importación desde Excel
 - 💰 **Control de pagos** mensuales por alumno
 - 📱 **Recordatorios automáticos** por WhatsApp (Evolution API)
-- 🔐 **Sistema de autenticación** con verificación por email
+- 🔐 **Sistema de autenticación robusto** con verificación por email (OTP de un uso)
+- 🛡️ **Seguridad auditada & Hardening** (Rate limiting, proxies de WhatsApp, entropía criptográfica fuerte)
 - ☁️ **Base de datos en la nube** con Supabase
 - 🗑️ **Eliminación masiva** de alumnos
 - 📱 **Diseño responsivo** (móvil, tablet, desktop)
@@ -91,6 +92,7 @@ supabase/
 PORT=3001
 
 # JWT
+# ¡ATENCIÓN! En producción (NODE_ENV=production), el servidor fallará al iniciar de inmediato si JWT_SECRET no está definido o conserva el valor por defecto de desarrollo.
 JWT_SECRET=tu-clave-secreta-muy-segura
 
 # EmailJS (https://www.emailjs.com/)
@@ -181,6 +183,16 @@ _Mutantes Fight Team - BJJ_
 | ⏸️ Suspendido | No |
 | ❌ Inactivo | No |
 
+## 🛡️ Seguridad & Hardening (Producción)
+
+El sistema ha sido auditado e incluye medidas de seguridad avanzadas para proteger la confidencialidad e integridad de la academia:
+
+- 🛡️ **Protección contra Fuerza Bruta (Rate Limiting)**: Límite estricto de **5 peticiones por minuto** para los endpoints sensibles de autenticación (`/api/auth/login` y `/api/auth/verificar`).
+- 🔑 **Enmascaramiento de Credenciales**: La API Key de WhatsApp (`evolutionApiKey`) nunca viaja expuesta hacia el cliente (se devuelve enmascarada como `••••••••`). El servidor utiliza proxies seguros en el backend para testear y enviar mensajes.
+- 🎲 **Entropía Criptográfica Fuerte**: Generación de tokens OTP, IDs de alumnos y códigos de invitación utilizando el módulo nativo `crypto` de Node.js en lugar de generadores pseudo-aleatorios inseguros (`Math.random`).
+- 🔐 **Protección Total de Endpoints**: Todos los endpoints de negocio y proxies de WhatsApp (`/api/*`) requieren autenticación JWT en las cabeceras (`Authorization: Bearer <token>`).
+- ⚠️ **Validación de Arranque de Producción**: El servidor se apaga automáticamente si detecta configuraciones inseguras (como no definir la clave secreta o usar la contraseña de desarrollo en producción).
+
 ## 📊 Importar alumnos desde Excel
 
 ### Columnas requeridas (mínimo)
@@ -219,15 +231,20 @@ _Mutantes Fight Team - BJJ_
 3. Sistema envía email con **token de 4 dígitos**
 4. Admin verifica email e inicia sesión
 
-### Endpoints
+### Endpoints de Autenticación
 
 | Método | Ruta | Descripción |
 |--------|------|-------------|
-| POST | `/api/auth/registro` | Registrar con código de invitación |
-| POST | `/api/auth/verificar` | Verificar email |
-| POST | `/api/auth/login` | Iniciar sesión |
-| GET | `/api/auth/me` | Obtener perfil |
-| POST | `/api/auth/invitaciones` | Generar invitación |
+| POST | `/api/auth/registro` | Registrar con código de invitación (limite 5 peticiones/min) |
+| POST | `/api/auth/verificar` | Verificar email (OTP) (limite 5 peticiones/min) |
+| POST | `/api/auth/login` | Iniciar sesión (limite 5 peticiones/min) |
+| GET | `/api/auth/me` | Obtener perfil administrador |
+| POST | `/api/auth/invitaciones` | Generar código de invitación (requiere JWT) |
+
+### Endpoints de Negocio y Proxy (Protegidos por JWT)
+
+Todos los endpoints que modifican o consultan alumnos, cuotas, configuraciones y llamadas directas de WhatsApp a través del backend requieren el encabezado HTTP:
+`Authorization: Bearer <token_jwt>`
 
 ## 📝 Scripts
 
