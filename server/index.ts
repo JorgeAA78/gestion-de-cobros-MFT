@@ -477,7 +477,7 @@ app.post('/api/recordatorios', async (req, res) => {
 });
 
 // DELETE recordatorios
-app.delete('/api/recordatorios/:alumnoId/:mes/:anio/:tipo?', async (req, res) => {
+app.delete('/api/recordatorios/:alumnoId/:mes/:anio/:tipo', async (req, res) => {
     try {
         const { alumnoId, mes, anio } = req.params;
         const tipoRaw = (req.params as { tipo?: string }).tipo;
