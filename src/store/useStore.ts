@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { Alumno, PagoMensual, AppConfig, ActivityLog, RecordatorioMap, RecordatorioTipo } from '../types';
+import type { Alumno, PagoMensual, AppConfig, ActivityLog, RecordatorioMap, RecordatorioTipo, EnvioManualStatus } from '../types';
 
 import { useAuthStore } from './authStore';
 
@@ -105,6 +105,7 @@ interface StoreState {
     mensajesEnviados: number;
     recordatoriosEnviados: RecordatorioMap;
     synced: boolean;
+    envioManualStatus: EnvioManualStatus | null;
 
     // Init
     syncFromServer: () => Promise<void>;
@@ -136,6 +137,9 @@ interface StoreState {
     // Recordatorios
     marcarRecordatorioEnviado: (alumnoId: string, mes: number, anio: number, tipo?: RecordatorioTipo) => void;
     toggleRecordatorioEnviado: (alumnoId: string, mes: number, anio: number, tipo?: RecordatorioTipo) => void;
+    obtenerStatusEnvioManual: () => Promise<void>;
+    iniciarEnvioManual: (alumnoIds: string[], template: string, mes: number, anio: number) => Promise<{ success: boolean; error?: string }>;
+    cancelarEnvioManual: () => Promise<void>;
 }
 
 const DEFAULT_PLANTILLA = `¡Hola {nombre}! 👋🥋
@@ -168,6 +172,7 @@ export const useStore = create<StoreState>()(
             mensajesEnviados: 0,
             recordatoriosEnviados: {},
             synced: false,
+            envioManualStatus: null,
 
             // ─── Sync with server ─────────────────────────
             syncFromServer: async () => {
@@ -183,6 +188,7 @@ export const useStore = create<StoreState>()(
                         synced: true,
                     });
                 }
+                await get().obtenerStatusEnvioManual();
             },
 
             pushToServer: () => {
@@ -382,6 +388,35 @@ export const useStore = create<StoreState>()(
                 } else {
                     get().marcarRecordatorioEnviado(alumnoId, mes, anio, tipo);
                 }
+            },
+            obtenerStatusEnvioManual: async () => {
+                const status = await apiGet<EnvioManualStatus>('/recordatorios/status-manual');
+                if (status) {
+                    set({ envioManualStatus: status });
+                }
+            },
+            iniciarEnvioManual: async (alumnoIds: string[], template: string, mes: number, anio: number) => {
+                try {
+                    const headers = await getAuthHeaders();
+                    const res = await fetch(`${API_BASE}/recordatorios/send-manual`, {
+                        method: 'POST',
+                        headers,
+                        body: JSON.stringify({ alumnoIds, template, mes, anio }),
+                    });
+                    if (res.ok) {
+                        await get().obtenerStatusEnvioManual();
+                        return { success: true };
+                    } else {
+                        const errData = await res.json() as { error?: string };
+                        return { success: false, error: errData.error || `HTTP ${res.status}` };
+                    }
+                } catch (e) {
+                    return { success: false, error: e instanceof Error ? e.message : String(e) };
+                }
+            },
+            cancelarEnvioManual: async () => {
+                await apiPost('/recordatorios/cancel-manual', {});
+                await get().obtenerStatusEnvioManual();
             },
         }),
         { name: 'mft-store' }

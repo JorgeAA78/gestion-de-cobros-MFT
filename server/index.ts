@@ -317,6 +317,17 @@ async function envioAutomatico() {
     console.log(`✅ [CRON] Completado: ${sent} enviados, ${failed} con error`);
 }
 
+// ─── Estado del Envío Manual Asíncrono en Segundo Plano ─────
+let statusEnvioManual = {
+    enProgreso: false,
+    total: 0,
+    enviados: 0,
+    fallidos: 0,
+    alumnoActualId: '',
+    resultados: {} as Record<string, 'pending' | 'sending' | 'sent' | 'error'>,
+    cancelRequest: false,
+};
+
 // ─── Express Server ─────────────────────────────────────────
 const app = express();
 app.use(cors());
@@ -494,6 +505,172 @@ app.delete('/api/recordatorios/:alumnoId/:mes/:anio/:tipo', authMiddleware, asyn
         console.error('Error eliminando recordatorio:', error);
         res.status(500).json({ error: 'Error al eliminar recordatorio' });
     }
+});
+
+// GET status del envío manual asíncrono
+app.get('/api/recordatorios/status-manual', authMiddleware, (_req, res) => {
+    res.json(statusEnvioManual);
+});
+
+// POST iniciar envío manual en segundo plano
+app.post('/api/recordatorios/send-manual', authMiddleware, async (req, res) => {
+    try {
+        const { alumnoIds, template, mes, anio } = req.body;
+        
+        if (!alumnoIds || !Array.isArray(alumnoIds) || alumnoIds.length === 0) {
+            return res.status(400).json({ error: 'Lista de alumnos inválida' });
+        }
+        
+        if (statusEnvioManual.enProgreso) {
+            return res.status(400).json({ error: 'Ya hay un envío de recordatorios en progreso' });
+        }
+        
+        // Inicializar el estado
+        const resultados: Record<string, 'pending' | 'sending' | 'sent' | 'error'> = {};
+        alumnoIds.forEach((id) => {
+            resultados[id] = 'pending';
+        });
+        
+        statusEnvioManual = {
+            enProgreso: true,
+            total: alumnoIds.length,
+            enviados: 0,
+            fallidos: 0,
+            alumnoActualId: '',
+            resultados,
+            cancelRequest: false,
+        };
+        
+        // Responder inmediatamente al frontend
+        res.json({ ok: true, mensaje: 'Envío de recordatorios iniciado en segundo plano' });
+        
+        // Ejecutar el proceso en segundo plano asíncronamente
+        (async () => {
+            console.log(`\n🚀 [MANUAL BACKGROUND] Iniciando envío de ${alumnoIds.length} recordatorios...`);
+            let mensajesIntentados = 0;
+            try {
+                const config = await obtenerConfig();
+                
+                if (!config.evolutionApiUrl || !config.evolutionApiKey || !config.evolutionInstance) {
+                    console.error('❌ [MANUAL BACKGROUND] Evolution API no configurada en el servidor');
+                    statusEnvioManual.enProgreso = false;
+                    return;
+                }
+                
+                for (let i = 0; i < alumnoIds.length; i++) {
+                    // Verificar si se solicitó cancelación antes de procesar el elemento
+                    if (statusEnvioManual.cancelRequest) {
+                        console.log('🛑 [MANUAL BACKGROUND] Envío cancelado por el usuario.');
+                        break;
+                    }
+                    
+                    const alumnoId = alumnoIds[i];
+                    statusEnvioManual.alumnoActualId = alumnoId;
+                    statusEnvioManual.resultados[alumnoId] = 'sending';
+                    
+                    // Obtener datos frescos de la DB/JSON en cada paso para evitar duplicar
+                    const freshData = await obtenerTodo();
+                    const a = freshData.alumnos.find((x: Alumno) => x.id === alumnoId);
+                    
+                    if (!a) {
+                        console.log(`  ⏭️ [MANUAL BACKGROUND] Alumno ${alumnoId} no encontrado. Omitiendo.`);
+                        statusEnvioManual.resultados[alumnoId] = 'error';
+                        statusEnvioManual.fallidos++;
+                        continue;
+                    }
+                    
+                    // Validar estado de actividad
+                    if (a.estado !== 'activo') {
+                        console.log(`  ⏭️ [MANUAL BACKGROUND] Alumno ${a.nombre} no activo (${a.estado}). Omitiendo.`);
+                        statusEnvioManual.resultados[alumnoId] = 'sent';
+                        continue;
+                    }
+                    
+                    // Validar si ya pagó
+                    const pago = freshData.pagos.find((p: Pago) => p.alumnoId === alumnoId && p.mes === mes && p.anio === anio);
+                    if (pago && pago.estado === 'pagado') {
+                        console.log(`  ⏭️ [MANUAL BACKGROUND] Alumno ${a.nombre} ya pagó cuota de ${MONTHS[mes - 1]}. Omitiendo.`);
+                        statusEnvioManual.resultados[alumnoId] = 'sent';
+                        continue;
+                    }
+                    
+                    // Validar si ya recibió recordatorio
+                    const recordatorioKey = `${alumnoId}_${mes}_${anio}`;
+                    const envios = freshData.recordatoriosEnviados[recordatorioKey];
+                    if (envios && (envios.manual || envios.primer_recordatorio || envios.segundo_recordatorio)) {
+                        console.log(`  ⏭️ [MANUAL BACKGROUND] Alumno ${a.nombre} ya recibió recordatorio. Omitiendo.`);
+                        statusEnvioManual.resultados[alumnoId] = 'sent';
+                        continue;
+                    }
+                    
+                    // Construir mensaje personalizado
+                    const msg = buildMessage(template, {
+                        nombre: a.nombre,
+                        monto: formatCurrency(a.cuota),
+                        mes: MONTHS[mes - 1],
+                        plan: a.plan === 'libre' ? 'Libre' : '3 Veces por Semana',
+                        datos_pago: config.datosPago || '',
+                    });
+                    
+                    mensajesIntentados++;
+                    console.log(`  📤 [MANUAL BACKGROUND] Enviando mensaje a ${a.nombre} (+${a.whatsapp})...`);
+                    const resSend = await sendWhatsApp(config.evolutionApiUrl, config.evolutionApiKey, config.evolutionInstance, a.whatsapp, msg);
+                    
+                    if (resSend.success) {
+                        statusEnvioManual.enviados++;
+                        statusEnvioManual.resultados[alumnoId] = 'sent';
+                        // Registrar en la BD
+                        await registrarRecordatorioEnviado(a.id, mes, anio, 'manual');
+                        console.log(`  ✅ [MANUAL BACKGROUND] Mensaje enviado a ${a.nombre}`);
+                    } else {
+                        statusEnvioManual.fallidos++;
+                        statusEnvioManual.resultados[alumnoId] = 'error';
+                        console.error(`  ❌ [MANUAL BACKGROUND] Error enviando a ${a.nombre}:`, resSend.error);
+                    }
+                    
+                    // Retardo anti-spam únicamente si no es el último elemento y el envío no fue cancelado
+                    if (i < alumnoIds.length - 1 && !statusEnvioManual.cancelRequest) {
+                        await randomDelay(mensajesIntentados);
+                    }
+                }
+                
+                // Finalización del lote
+                if (statusEnvioManual.enviados > 0) {
+                    await incrementarMensajesEnviados(statusEnvioManual.enviados);
+                }
+                
+                const now = new Date();
+                const canceladoTexto = statusEnvioManual.cancelRequest ? ' (Cancelado)' : '';
+                await agregarActividad({
+                    type: 'sent',
+                    message: `Recordatorios ${MONTHS[mes - 1]}${canceladoTexto}: ${statusEnvioManual.enviados} enviados, ${statusEnvioManual.fallidos} fallidos`,
+                    timestamp: now.toISOString(),
+                });
+                
+                console.log(`✅ [MANUAL BACKGROUND] Envío finalizado. Enviados: ${statusEnvioManual.enviados}, Fallidos: ${statusEnvioManual.fallidos}${canceladoTexto}\n`);
+                
+            } catch (err) {
+                console.error('❌ [MANUAL BACKGROUND] Error crítico durante el envío:', err);
+            } finally {
+                statusEnvioManual.enProgreso = false;
+                statusEnvioManual.alumnoActualId = '';
+            }
+        })();
+        
+    } catch (error) {
+        console.error('Error iniciando envío manual:', error);
+        res.status(500).json({ error: 'Error al iniciar el envío manual' });
+    }
+});
+
+// POST cancelar el envío manual activo
+app.post('/api/recordatorios/cancel-manual', authMiddleware, (req, res) => {
+    if (!statusEnvioManual.enProgreso) {
+        return res.status(400).json({ error: 'No hay ningún envío manual en progreso' });
+    }
+    console.log('🛑 [MANUAL] Cancelación del envío solicitada por el usuario');
+    statusEnvioManual.cancelRequest = true;
+    res.json({ ok: true, mensaje: 'Solicitud de cancelación recibida' });
 });
 
 // GET envios realizados (for frontend info)

@@ -58,3 +58,13 @@ export const MONTH_SHORT = [
     'ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN',
     'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC',
 ];
+
+export interface EnvioManualStatus {
+    enProgreso: boolean;
+    total: number;
+    enviados: number;
+    fallidos: number;
+    alumnoActualId: string;
+    resultados: Record<string, 'pending' | 'sending' | 'sent' | 'error'>;
+    cancelRequest: boolean;
+}

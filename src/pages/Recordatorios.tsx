@@ -1,18 +1,22 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useStore } from '../store/useStore';
 import { MONTH_NAMES } from '../types';
 import { showToast } from '../components/Toast';
-import { formatCurrency, sendWhatsApp, buildMessage } from '../services/evolution';
+import { formatCurrency, buildMessage } from '../services/evolution';
 
 export default function Recordatorios() {
     const alumnos = useStore((s) => s.alumnos);
     const pagos = useStore((s) => s.pagos);
     const config = useStore((s) => s.config);
-    const addActivity = useStore((s) => s.addActivity);
-    const incrementMensajes = useStore((s) => s.incrementMensajes);
     const recordatoriosEnviados = useStore((s) => s.recordatoriosEnviados);
-    const marcarRecordatorioEnviado = useStore((s) => s.marcarRecordatorioEnviado);
     const toggleRecordatorioEnviado = useStore((s) => s.toggleRecordatorioEnviado);
+    
+    // Acciones y estados del envío en segundo plano
+    const statusManual = useStore((s) => s.envioManualStatus);
+    const iniciarEnvioManual = useStore((s) => s.iniciarEnvioManual);
+    const cancelarEnvioManual = useStore((s) => s.cancelarEnvioManual);
+    const syncFromServer = useStore((s) => s.syncFromServer);
+
     const now = new Date();
     const mesCurrent = now.getMonth() + 1;
     const anio = now.getFullYear();
@@ -20,11 +24,23 @@ export default function Recordatorios() {
     const MAX_LOTE = 20;
 
     const [mes, setMes] = useState(mesCurrent);
-    const [sending, setSending] = useState(false);
-    type StatusType = 'pending' | 'sending' | 'manual_sent' | 'auto_sent' | 'error';
-    const [statuses, setStatuses] = useState<Record<string, StatusType | undefined>>({});
     const [template, setTemplate] = useState(config.mensajePlantilla || `¡Hola {nombre}! 👋 \n\nTe recordamos que la cuota de *{mes}* está pendiente:\n\n💰 Monto: *{monto}*\n📋 Plan: *{plan}*\n\nAlias: *mutantesbjj*
 a nombre de: Pablo Sebastian Echazu Bloser\n\n*Por favor, enviar comprobante al realizar el pago*\n\n¡Te esperamos en el tatami! 💪 \n\n_Mutantes Fight Team - BJJ_`);
+
+    const sending = Boolean(statusManual?.enProgreso);
+
+    // Polling rápido del estado completo mientras dure el envío en segundo plano
+    useEffect(() => {
+        let interval: ReturnType<typeof setInterval> | undefined;
+        if (sending) {
+            interval = setInterval(() => {
+                syncFromServer();
+            }, 3000);
+        }
+        return () => {
+            if (interval) clearInterval(interval);
+        };
+    }, [sending, syncFromServer]);
 
     const pendientes = useMemo(() => {
         return alumnos.filter((a) => {
@@ -45,17 +61,7 @@ a nombre de: Pablo Sebastian Echazu Bloser\n\n*Por favor, enviar comprobante al 
     };
     const hasAny = (key: string) => hasManual(key) || hasAuto(key);
 
-    const randomDelay = (index: number) => {
-        // Cada 10 mensajes, pausa más larga (5-8 min)
-        if (index > 0 && index % 10 === 0) {
-            const sec = Math.floor(Math.random() * (480 - 300 + 1)) + 300;
-            showToast(`⏸️ Pausa larga entre lotes... (${Math.round(sec/60)} min)`, 'info');
-            return new Promise<void>((r) => setTimeout(r, sec * 1000));
-        }
-        // Delay normal entre mensajes
-        const sec = Math.floor(Math.random() * (240 - 120 + 1)) + 120;
-        return new Promise<void>((r) => setTimeout(r, sec * 1000));
-    };
+    type StatusType = 'pending' | 'sending' | 'manual_sent' | 'auto_sent' | 'error';
 
     const handleSend = async () => {
         const paraEnviar = pendientes
@@ -72,43 +78,21 @@ a nombre de: Pablo Sebastian Echazu Bloser\n\n*Por favor, enviar comprobante al 
             return;
         }
 
-        setSending(true);
-        const initialStatuses: Record<string, StatusType> = {};
-        paraEnviar.forEach((a) => { initialStatuses[a.id] = 'pending'; });
-        setStatuses(initialStatuses);
-
-        let sent = 0, failed = 0;
-
-        for (let i = 0; i < paraEnviar.length; i++) {
-            const a = paraEnviar[i];
-            setStatuses((s) => ({ ...s, [a.id]: 'sending' }));
-
-            const msg = buildMessage(template, {
-                nombre: a.nombre,
-                monto: formatCurrency(a.cuota),
-                mes: MONTH_NAMES[mes - 1],
-                plan: a.plan === 'libre' ? 'Libre' : '3 Veces por Semana',
-                datos_pago: config.datosPago || '',
-            });
-
-            const res = await sendWhatsApp(config.evolutionApiUrl, config.evolutionApiKey, config.evolutionInstance, a.whatsapp, msg);
-
-            if (res.success) {
-                sent++;
-                setStatuses((s) => ({ ...s, [a.id]: 'manual_sent' }));
-                marcarRecordatorioEnviado(a.id, mes, anio, 'manual');
-            } else {
-                failed++;
-                setStatuses((s) => ({ ...s, [a.id]: 'error' }));
-            }
-
-            if (i < paraEnviar.length - 1) await randomDelay(i + 1);
+        const ids = paraEnviar.map((a) => a.id);
+        const res = await iniciarEnvioManual(ids, template, mes, anio);
+        
+        if (res.success) {
+            showToast('🚀 Envío de recordatorios iniciado en segundo plano. Podés navegar libremente por el sistema.', 'success');
+        } else {
+            showToast(`❌ Error al iniciar el envío: ${res.error}`, 'error');
         }
+    };
 
-        incrementMensajes(sent);
-        addActivity('sent', `Recordatorios ${MONTH_NAMES[mes - 1]}: ${sent} enviados, ${failed} fallidos`);
-        showToast(`✅ ${sent} enviados, ${failed} con error`, sent > 0 ? 'success' : 'error');
-        setSending(false);
+    const handleCancel = async () => {
+        if (window.confirm('¿Estás seguro de que querés detener el envío de recordatorios?')) {
+            await cancelarEnvioManual();
+            showToast('🛑 Solicitud de cancelación enviada.', 'info');
+        }
     };
 
     const sampleMsg = pendientes.length > 0
@@ -129,13 +113,42 @@ a nombre de: Pablo Sebastian Echazu Bloser\n\n*Por favor, enviar comprobante al 
             </div>
 
             <div className="form-container" style={{ maxWidth: 900 }}>
+                {/* Panel de progreso del envío en segundo plano */}
+                {sending && statusManual && (
+                    <div className="card" style={{ borderLeft: '4px solid var(--accent-green)', background: 'rgba(34,197,94,0.03)', marginBottom: 'var(--space-md)' }}>
+                        <h3 className="section-title">⏳ Envío de Recordatorios en Progreso</h3>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10, flexWrap: 'wrap', gap: '10px' }}>
+                            <div>
+                                Enviados: <strong style={{ color: '#22c55e' }}>{statusManual.enviados}</strong> | 
+                                Fallidos: <strong style={{ color: '#ef4444' }}>{statusManual.fallidos}</strong> | 
+                                Total: <strong>{statusManual.total}</strong>
+                            </div>
+                            <div style={{ color: 'var(--text-dim)', fontSize: '0.9rem' }}>
+                                Alumno actual: <strong>{alumnos.find(x => x.id === statusManual.alumnoActualId)?.nombre || 'Procesando...'}</strong>
+                            </div>
+                        </div>
+                        {/* Barra de progreso */}
+                        <div style={{ width: '100%', height: 8, background: 'rgba(255,255,255,0.1)', borderRadius: 4, overflow: 'hidden', marginBottom: 15 }}>
+                            <div style={{
+                                width: `${((statusManual.enviados + statusManual.fallidos) / statusManual.total) * 100}%`,
+                                height: '100%',
+                                background: 'var(--accent-green)',
+                                transition: 'width 0.3s ease'
+                            }} />
+                        </div>
+                        <button className="btn btn-danger btn-block" onClick={handleCancel}>
+                            🛑 Detener Envío
+                        </button>
+                    </div>
+                )}
+
                 {/* Month + Info */}
                 <div className="card">
                     <h3 className="section-title">📅 Selección de Mes</h3>
                     <div className="form-row">
                         <div className="form-group">
                             <label>Mes a recordar</label>
-                            <select className="form-select" value={mes} onChange={(e) => setMes(parseInt(e.target.value))}>
+                            <select className="form-select" value={mes} onChange={(e) => setMes(parseInt(e.target.value))} disabled={sending}>
                                 {MONTH_NAMES.map((n, i) => <option key={i} value={i + 1}>{n}</option>)}
                             </select>
                         </div>
@@ -165,7 +178,7 @@ a nombre de: Pablo Sebastian Echazu Bloser\n\n*Por favor, enviar comprobante al 
                 <div className="card mt-2">
                     <h3 className="section-title">💬 Mensaje de Recordatorio</h3>
                     <div className="form-group">
-                        <textarea className="form-textarea" value={template} onChange={(e) => setTemplate(e.target.value)} rows={8} />
+                        <textarea className="form-textarea" value={template} onChange={(e) => setTemplate(e.target.value)} rows={8} disabled={sending} />
                         <p className="form-hint">Variables: {'{nombre}'}, {'{monto}'}, {'{mes}'}, {'{plan}'}, {'{datos_pago}'}</p>
                     </div>
 
@@ -200,8 +213,18 @@ a nombre de: Pablo Sebastian Echazu Bloser\n\n*Por favor, enviar comprobante al 
                                     const key = keyFor(a.id);
                                     const manualSent = hasManual(key);
                                     const autoSent = hasAuto(key);
-                                    const st = statuses[a.id];
-                                    const displayStatus: StatusType = st || (manualSent ? 'manual_sent' : autoSent ? 'auto_sent' : 'pending');
+                                    
+                                    // Mapear dinámicamente el estado a partir de los resultados del servidor si está en progreso
+                                    let displayStatus: StatusType = 'pending';
+                                    if (sending && statusManual?.resultados && statusManual.resultados[a.id]) {
+                                        const resStatus = statusManual.resultados[a.id];
+                                        if (resStatus === 'sent') displayStatus = 'manual_sent';
+                                        else if (resStatus === 'sending') displayStatus = 'sending';
+                                        else if (resStatus === 'error') displayStatus = 'error';
+                                        else displayStatus = 'pending';
+                                    } else {
+                                        displayStatus = manualSent ? 'manual_sent' : autoSent ? 'auto_sent' : 'pending';
+                                    }
 
                                     return (
                                         <tr key={a.id}>
@@ -218,12 +241,6 @@ a nombre de: Pablo Sebastian Echazu Bloser\n\n*Por favor, enviar comprobante al 
                                                     onClick={() => {
                                                         if (sending || autoSent) return;
                                                         toggleRecordatorioEnviado(a.id, mes, anio, 'manual');
-                                                        setStatuses((s) => {
-                                                            const next = { ...s };
-                                                            if (manualSent) delete next[a.id];
-                                                            else next[a.id] = 'manual_sent';
-                                                            return next;
-                                                        });
                                                     }}
                                                 >
                                                     {displayStatus === 'sending' && '⏳ Enviando...'}
@@ -245,7 +262,7 @@ a nombre de: Pablo Sebastian Echazu Bloser\n\n*Por favor, enviar comprobante al 
                     <button className="btn btn-success btn-lg btn-block"
                         disabled={pendientes.length === 0 || sending || pendientes.filter((a) => !hasAny(keyFor(a.id))).length === 0}
                         onClick={handleSend}>
-                        {sending ? '⏳ Enviando...' : `📱 Enviar Recordatorios (${Math.min(MAX_LOTE, pendientes.filter((a) => !hasAny(keyFor(a.id))).length)} de ${pendientes.filter((a) => !hasAny(keyFor(a.id))).length} pendientes)`}
+                        {sending ? '⏳ Enviando en segundo plano...' : `📱 Enviar Recordatorios (${Math.min(MAX_LOTE, pendientes.filter((a) => !hasAny(keyFor(a.id))).length)} de ${pendientes.filter((a) => !hasAny(keyFor(a.id))).length} pendientes)`}
                     </button>
                 </div>
 
