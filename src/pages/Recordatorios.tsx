@@ -21,7 +21,8 @@ export default function Recordatorios() {
 
     const [mes, setMes] = useState(mesCurrent);
     const [sending, setSending] = useState(false);
-    const [statuses, setStatuses] = useState<Record<string, 'pending' | 'sending' | 'sent' | 'error' | 'already_sent' | undefined>>({});
+    type StatusType = 'pending' | 'sending' | 'manual_sent' | 'auto_sent' | 'error';
+    const [statuses, setStatuses] = useState<Record<string, StatusType | undefined>>({});
     const [template, setTemplate] = useState(config.mensajePlantilla || `¡Hola {nombre}! 👋 \n\nTe recordamos que la cuota de *{mes}* está pendiente:\n\n💰 Monto: *{monto}*\n📋 Plan: *{plan}*\n\nAlias: *mutantesbjj*
 a nombre de: Pablo Sebastian Echazu Bloser\n\n*Por favor, enviar comprobante al realizar el pago*\n\n¡Te esperamos en el tatami! 💪 \n\n_Mutantes Fight Team - BJJ_`);
 
@@ -33,6 +34,16 @@ a nombre de: Pablo Sebastian Echazu Bloser\n\n*Por favor, enviar comprobante al 
             return !pago || pago.estado !== 'pagado';
         });
     }, [alumnos, pagos, mes, anio]);
+
+    const keyFor = (alumnoId: string) => `${alumnoId}_${mes}_${anio}`;
+
+    const hasManual = (key: string) => Boolean(recordatoriosEnviados[key]?.manual);
+    const hasAuto = (key: string) => {
+        const entry = recordatoriosEnviados[key];
+        if (!entry) return false;
+        return Boolean(entry.primer_recordatorio || entry.segundo_recordatorio);
+    };
+    const hasAny = (key: string) => hasManual(key) || hasAuto(key);
 
     const randomDelay = (index: number) => {
         // Cada 10 mensajes, pausa más larga (5-8 min)
@@ -48,7 +59,7 @@ a nombre de: Pablo Sebastian Echazu Bloser\n\n*Por favor, enviar comprobante al 
 
     const handleSend = async () => {
         const paraEnviar = pendientes
-            .filter(a => !recordatoriosEnviados[`${a.id}_${mes}_${anio}`])
+            .filter((a) => !hasAny(keyFor(a.id)))
             .slice(0, MAX_LOTE);
         
         if (paraEnviar.length === 0) {
@@ -62,7 +73,7 @@ a nombre de: Pablo Sebastian Echazu Bloser\n\n*Por favor, enviar comprobante al 
         }
 
         setSending(true);
-        const initialStatuses: Record<string, 'pending'> = {};
+        const initialStatuses: Record<string, StatusType> = {};
         paraEnviar.forEach((a) => { initialStatuses[a.id] = 'pending'; });
         setStatuses(initialStatuses);
 
@@ -84,8 +95,8 @@ a nombre de: Pablo Sebastian Echazu Bloser\n\n*Por favor, enviar comprobante al 
 
             if (res.success) {
                 sent++;
-                setStatuses((s) => ({ ...s, [a.id]: 'sent' }));
-                marcarRecordatorioEnviado(a.id, mes, anio);
+                setStatuses((s) => ({ ...s, [a.id]: 'manual_sent' }));
+                marcarRecordatorioEnviado(a.id, mes, anio, 'manual');
             } else {
                 failed++;
                 setStatuses((s) => ({ ...s, [a.id]: 'error' }));
@@ -186,10 +197,12 @@ a nombre de: Pablo Sebastian Echazu Bloser\n\n*Por favor, enviar comprobante al 
                                         </td>
                                     </tr>
                                 ) : pendientes.map((a, i) => {
+                                    const key = keyFor(a.id);
+                                    const manualSent = hasManual(key);
+                                    const autoSent = hasAuto(key);
                                     const st = statuses[a.id];
-                                    const yaEnviado = recordatoriosEnviados[`${a.id}_${mes}_${anio}`];
-                                    const displayStatus = st || (yaEnviado ? 'already_sent' : 'pending');
-                                    
+                                    const displayStatus: StatusType = st || (manualSent ? 'manual_sent' : autoSent ? 'auto_sent' : 'pending');
+
                                     return (
                                         <tr key={a.id}>
                                             <td>{i + 1}</td>
@@ -198,16 +211,26 @@ a nombre de: Pablo Sebastian Echazu Bloser\n\n*Por favor, enviar comprobante al 
                                             <td>{a.plan === 'libre' ? '🔥 Libre' : '💪 3x'}</td>
                                             <td>{formatCurrency(a.cuota)}</td>
                                             <td>
-                                                <span 
-                                                    className={`badge ${displayStatus === 'sent' || displayStatus === 'already_sent' ? 'pagado' : displayStatus === 'error' ? 'vencido' : 'pendiente'}`}
-                                                    onClick={() => !sending && toggleRecordatorioEnviado(a.id, mes, anio)}
-                                                    style={{ cursor: sending ? 'default' : 'pointer' }}
-                                                    title={sending ? '' : "Clic para marcar/desmarcar manualmente"}
+                                                <span
+                                                    className={`badge ${displayStatus === 'manual_sent' || displayStatus === 'auto_sent' ? 'pagado' : displayStatus === 'error' ? 'vencido' : 'pendiente'}`}
+                                                    style={{ cursor: sending || autoSent ? 'default' : 'pointer' }}
+                                                    title={autoSent ? 'Envío automático registrado' : 'Clic para marcar/desmarcar manualmente'}
+                                                    onClick={() => {
+                                                        if (sending || autoSent) return;
+                                                        toggleRecordatorioEnviado(a.id, mes, anio, 'manual');
+                                                        setStatuses((s) => {
+                                                            const next = { ...s };
+                                                            if (manualSent) delete next[a.id];
+                                                            else next[a.id] = 'manual_sent';
+                                                            return next;
+                                                        });
+                                                    }}
                                                 >
-                                                    {displayStatus === 'sending' ? '⏳ Enviando...' :
-                                                        displayStatus === 'sent' ? '✓ Enviado recién' :
-                                                        displayStatus === 'already_sent' ? '✓ Ya enviado (Clic p/deshacer)' :
-                                                        displayStatus === 'error' ? '✗ Error' : '⏳ Pendiente (Clic p/marcar)'}
+                                                    {displayStatus === 'sending' && '⏳ Enviando...'}
+                                                    {displayStatus === 'error' && '✗ Error'}
+                                                    {displayStatus === 'manual_sent' && '✓ Manual'}
+                                                    {displayStatus === 'auto_sent' && '🤖 Automático'}
+                                                    {displayStatus === 'pending' && !autoSent && !manualSent && '⏳ Pendiente (Click)'}
                                                 </span>
                                             </td>
                                         </tr>
@@ -220,9 +243,9 @@ a nombre de: Pablo Sebastian Echazu Bloser\n\n*Por favor, enviar comprobante al 
 
                 <div className="btn-group mt-2">
                     <button className="btn btn-success btn-lg btn-block"
-                        disabled={pendientes.length === 0 || sending || pendientes.filter(a => !recordatoriosEnviados[`${a.id}_${mes}_${anio}`]).length === 0}
+                        disabled={pendientes.length === 0 || sending || pendientes.filter((a) => !hasAny(keyFor(a.id))).length === 0}
                         onClick={handleSend}>
-                        {sending ? '⏳ Enviando...' : `📱 Enviar Recordatorios (${Math.min(MAX_LOTE, pendientes.filter(a => !recordatoriosEnviados[`${a.id}_${mes}_${anio}`]).length)} de ${pendientes.filter(a => !recordatoriosEnviados[`${a.id}_${mes}_${anio}`]).length} pendientes)`}
+                        {sending ? '⏳ Enviando...' : `📱 Enviar Recordatorios (${Math.min(MAX_LOTE, pendientes.filter((a) => !hasAny(keyFor(a.id))).length)} de ${pendientes.filter((a) => !hasAny(keyFor(a.id))).length} pendientes)`}
                     </button>
                 </div>
 

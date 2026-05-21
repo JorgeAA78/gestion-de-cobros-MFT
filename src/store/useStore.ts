@@ -1,8 +1,10 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { Alumno, PagoMensual, AppConfig, ActivityLog } from '../types';
+import type { Alumno, PagoMensual, AppConfig, ActivityLog, RecordatorioMap, RecordatorioTipo } from '../types';
 
 const API_BASE = (import.meta as any).env?.PROD ? '/api' : 'http://localhost:3001/api';
+
+const RECORDATORIO_TIPOS: RecordatorioTipo[] = ['manual', 'primer_recordatorio', 'segundo_recordatorio'];
 
 // ─── API sync helpers ────────────────────────────────────────
 async function apiGet<T>(path: string): Promise<T | null> {
@@ -39,6 +41,44 @@ async function apiDelete(path: string) {
     } catch { }
 }
 
+function normalizeRecordatorios(data: any): RecordatorioMap {
+    const map: RecordatorioMap = {};
+    if (!data) return map;
+
+    if (Array.isArray(data)) {
+        data.forEach((item: any) => {
+            if (!item) return;
+            const key = item.key || (item.alumnoId && item.mes != null && item.anio != null
+                ? `${item.alumnoId}_${item.mes}_${item.anio}`
+                : undefined);
+            const tipo = (item.tipo as RecordatorioTipo) || 'manual';
+            const fecha = item.fecha || item.fecha_envio || (typeof item === 'string' ? item : undefined);
+            if (!key || typeof fecha !== 'string') return;
+            const current = map[key] || {};
+            current[tipo] = fecha;
+            map[key] = current;
+        });
+        return map;
+    }
+
+    Object.entries(data as Record<string, any>).forEach(([key, value]) => {
+        if (!value) return;
+        if (typeof value === 'string') {
+            map[key] = { manual: value };
+        } else if (typeof value === 'object') {
+            const entry: Partial<Record<RecordatorioTipo, string>> = {};
+            RECORDATORIO_TIPOS.forEach((tipo) => {
+                const fecha = value[tipo];
+                if (typeof fecha === 'string') entry[tipo] = fecha;
+            });
+            if (Object.keys(entry).length > 0) {
+                map[key] = entry;
+            }
+        }
+    });
+    return map;
+}
+
 // ─── Store Interface ─────────────────────────────────────────
 interface StoreState {
     alumnos: Alumno[];
@@ -46,7 +86,7 @@ interface StoreState {
     config: AppConfig;
     activity: ActivityLog[];
     mensajesEnviados: number;
-    recordatoriosEnviados: Record<string, string>;
+    recordatoriosEnviados: RecordatorioMap;
     synced: boolean;
 
     // Init
@@ -77,8 +117,8 @@ interface StoreState {
     incrementMensajes: (count?: number) => void;
     
     // Recordatorios
-    marcarRecordatorioEnviado: (alumnoId: string, mes: number, anio: number) => void;
-    toggleRecordatorioEnviado: (alumnoId: string, mes: number, anio: number) => void;
+    marcarRecordatorioEnviado: (alumnoId: string, mes: number, anio: number, tipo?: RecordatorioTipo) => void;
+    toggleRecordatorioEnviado: (alumnoId: string, mes: number, anio: number, tipo?: RecordatorioTipo) => void;
 }
 
 const DEFAULT_PLANTILLA = `¡Hola {nombre}! 👋🥋
@@ -122,7 +162,7 @@ export const useStore = create<StoreState>()(
                         config: data.config || get().config,
                         activity: data.activity || [],
                         mensajesEnviados: data.mensajesEnviados || 0,
-                        recordatoriosEnviados: data.recordatoriosEnviados || get().recordatoriosEnviados,
+                        recordatoriosEnviados: normalizeRecordatorios(data.recordatoriosEnviados),
                         synced: true,
                     });
                 }
@@ -288,33 +328,40 @@ export const useStore = create<StoreState>()(
             },
             
             // ─── Recordatorios ────────────────────────────
-            marcarRecordatorioEnviado: (alumnoId, mes, anio) => {
-                set((s) => ({
-                    recordatoriosEnviados: {
-                        ...s.recordatoriosEnviados,
-                        [`${alumnoId}_${mes}_${anio}`]: new Date().toISOString(),
-                    }
-                }));
-                apiPost('/recordatorios', { alumnoId, mes, anio });
-            },
-            toggleRecordatorioEnviado: (alumnoId, mes, anio) => {
+            marcarRecordatorioEnviado: (alumnoId, mes, anio, tipo: RecordatorioTipo = 'manual') => {
                 const key = `${alumnoId}_${mes}_${anio}`;
-                const wasSent = !!get().recordatoriosEnviados[key];
-                
+                const timestamp = new Date().toISOString();
                 set((s) => {
-                    const next = { ...s.recordatoriosEnviados };
-                    if (next[key]) {
-                        delete next[key];
-                    } else {
-                        next[key] = new Date().toISOString();
-                    }
-                    return { recordatoriosEnviados: next };
+                    const current = s.recordatoriosEnviados[key] ?? {};
+                    return {
+                        recordatoriosEnviados: {
+                            ...s.recordatoriosEnviados,
+                            [key]: { ...current, [tipo]: timestamp },
+                        },
+                    };
                 });
+                apiPost('/recordatorios', { alumnoId, mes, anio, tipo });
+            },
+            toggleRecordatorioEnviado: (alumnoId, mes, anio, tipo: RecordatorioTipo = 'manual') => {
+                const key = `${alumnoId}_${mes}_${anio}`;
+                const current = get().recordatoriosEnviados[key] ?? {};
+                const wasSent = Boolean(current[tipo]);
 
                 if (wasSent) {
-                    apiDelete(`/recordatorios/${alumnoId}/${mes}/${anio}`);
+                    set((s) => {
+                        const entry = { ...(s.recordatoriosEnviados[key] ?? {}) } as Partial<Record<RecordatorioTipo, string>>;
+                        delete entry[tipo];
+                        const next = { ...s.recordatoriosEnviados };
+                        if (Object.keys(entry).length === 0) {
+                            delete next[key];
+                        } else {
+                            next[key] = entry;
+                        }
+                        return { recordatoriosEnviados: next };
+                    });
+                    apiDelete(`/recordatorios/${alumnoId}/${mes}/${anio}/${tipo}`);
                 } else {
-                    apiPost('/recordatorios', { alumnoId, mes, anio });
+                    get().marcarRecordatorioEnviado(alumnoId, mes, anio, tipo);
                 }
             },
         }),

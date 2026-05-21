@@ -69,6 +69,17 @@ CREATE TABLE IF NOT EXISTS pagos (
     UNIQUE(alumno_id, mes, anio)
 );
 
+-- ─── Tabla de Recordatorios Enviados ────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS recordatorios_enviados (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    alumno_id TEXT REFERENCES alumnos(id) ON DELETE CASCADE,
+    mes INTEGER NOT NULL CHECK (mes >= 1 AND mes <= 12),
+    anio INTEGER NOT NULL,
+    tipo TEXT NOT NULL CHECK (tipo IN ('manual', 'primer_recordatorio', 'segundo_recordatorio')),
+    fecha_envio TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(alumno_id, mes, anio, tipo)
+);
+
 -- ─── Tabla de Actividad ─────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS actividad (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -87,6 +98,7 @@ CREATE TABLE IF NOT EXISTS configuracion (
 -- ─── Índices para mejor rendimiento ─────────────────────────────────────────
 CREATE INDEX IF NOT EXISTS idx_pagos_alumno ON pagos(alumno_id);
 CREATE INDEX IF NOT EXISTS idx_pagos_periodo ON pagos(mes, anio);
+CREATE INDEX IF NOT EXISTS idx_recordatorios_alumno ON recordatorios_enviados(alumno_id, mes, anio);
 CREATE INDEX IF NOT EXISTS idx_invitaciones_codigo ON invitaciones(codigo);
 CREATE INDEX IF NOT EXISTS idx_admins_email ON admins(email);
 
@@ -98,6 +110,7 @@ ALTER TABLE alumnos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE pagos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE actividad ENABLE ROW LEVEL SECURITY;
 ALTER TABLE configuracion ENABLE ROW LEVEL SECURITY;
+ALTER TABLE recordatorios_enviados ENABLE ROW LEVEL SECURITY;
 
 -- Políticas para service_role (backend) - acceso total
 CREATE POLICY "Service role full access admins" ON admins FOR ALL USING (true);
@@ -106,6 +119,7 @@ CREATE POLICY "Service role full access alumnos" ON alumnos FOR ALL USING (true)
 CREATE POLICY "Service role full access pagos" ON pagos FOR ALL USING (true);
 CREATE POLICY "Service role full access actividad" ON actividad FOR ALL USING (true);
 CREATE POLICY "Service role full access configuracion" ON configuracion FOR ALL USING (true);
+CREATE POLICY "Service role full access recordatorios" ON recordatorios_enviados FOR ALL USING (true);
 
 -- ═══════════════════════════════════════════════════════════════════════════
 -- FIN DEL SCHEMA

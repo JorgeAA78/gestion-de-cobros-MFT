@@ -95,5 +95,6 @@ export interface DbRecordatorioEnviado {
     alumno_id: string;
     mes: number;
     anio: number;
+    tipo: 'manual' | 'primer_recordatorio' | 'segundo_recordatorio';
     fecha_envio: string;
 }

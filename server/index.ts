@@ -1,5 +1,7 @@
-// Ignorar errores de certificado SSL (solo desarrollo)
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+// Ignorar errores de certificado SSL únicamente en desarrollo
+if (process.env.NODE_ENV !== 'production') {
+    process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+}
 
 import express from 'express';
 import cors from 'cors';
@@ -24,9 +26,14 @@ import {
     guardarConfig,
     registrarRecordatorioEnviado,
     eliminarRecordatorioEnviado,
+    obtenerRecordatoriosEnviados,
+    obtenerMensajesEnviados,
+    incrementarMensajesEnviados,
     type DataStore,
     type Alumno,
-    type Pago
+    type Pago,
+    type RecordatoriosMap,
+    type RecordatorioTipo
 } from './lib/data.store.js';
 
 dotenv.config();
@@ -228,15 +235,15 @@ async function envioAutomatico() {
     }
 
     // Filtrar los que ya recibieron ESTE TIPO de mensaje este mes
-    const yaEnviados = data.enviosRealizados as any[];
+    const recordatoriosMap = (data.recordatoriosEnviados ?? {}) as RecordatoriosMap;
     const pendientesSinNotificar = todosPendientes.filter((a) => {
-        // Buscar si ya recibió este tipo de recordatorio
-        return !yaEnviados.find((e) =>
-            e.alumnoId === a.id &&
-            e.mes === mes &&
-            e.anio === anio &&
-            e.tipo === tipoEnvio
-        );
+        const key = `${a.id}_${mes}_${anio}`;
+        const enviados = recordatoriosMap[key];
+        if (!enviados) return true;
+        if (enviados[tipoEnvio as RecordatorioTipo]) return false;
+        // Si se envió manualmente, también evitamos duplicar
+        if (enviados.manual) return false;
+        return true;
     });
 
     if (pendientesSinNotificar.length === 0) {
@@ -286,13 +293,7 @@ async function envioAutomatico() {
         if (res.success) {
             sent++;
             console.log(`  ✅ ${a.nombre} — Enviado`);
-            (data.enviosRealizados as any[]).push({
-                alumnoId: a.id,
-                mes,
-                anio,
-                fecha: now.toISOString(),
-                tipo: tipoEnvio
-            });
+            await registrarRecordatorioEnviado(a.id, mes, anio, tipoEnvio as RecordatorioTipo);
         } else {
             failed++;
             console.log(`  ❌ ${a.nombre} — Error: ${res.error}`);
@@ -302,11 +303,9 @@ async function envioAutomatico() {
         if (i < alumnosHoy.length - 1) await randomDelay(i + 1);
     }
 
-    // Guardar envíos y actividad
-    const localData = readDataLocal();
-    localData.mensajesEnviados += sent;
-    localData.enviosRealizados = data.enviosRealizados;
-    writeDataLocal(localData);
+    if (sent > 0) {
+        await incrementarMensajesEnviados(sent);
+    }
 
     await agregarActividad({
         type: 'sent',
@@ -450,19 +449,27 @@ app.post('/api/activity', async (req, res) => {
 });
 
 // POST increment messages
-app.post('/api/mensajes/increment', (req, res) => {
-    const data = readDataLocal();
-    data.mensajesEnviados += req.body.count || 1;
-    writeDataLocal(data);
-    res.json({ ok: true, total: data.mensajesEnviados });
+app.post('/api/mensajes/increment', async (req, res) => {
+    try {
+        const total = await incrementarMensajesEnviados(req.body.count || 1);
+        res.json({ ok: true, total });
+    } catch (error) {
+        console.error('Error incrementando mensajes:', error);
+        res.status(500).json({ error: 'Error al actualizar contador de mensajes' });
+    }
 });
 
 // POST recordatorios
 app.post('/api/recordatorios', async (req, res) => {
     try {
         const { alumnoId, mes, anio } = req.body;
-        await registrarRecordatorioEnviado(alumnoId, mes, anio);
-        res.json({ ok: true });
+        const tipo = (req.body.tipo as RecordatorioTipo) || 'manual';
+        await registrarRecordatorioEnviado(alumnoId, mes, anio, tipo);
+        if (tipo !== 'manual') {
+            await incrementarMensajesEnviados(1);
+        }
+        const total = await obtenerMensajesEnviados();
+        res.json({ ok: true, total });
     } catch (error) {
         console.error('Error registrando recordatorio:', error);
         res.status(500).json({ error: 'Error al registrar recordatorio' });
@@ -470,10 +477,12 @@ app.post('/api/recordatorios', async (req, res) => {
 });
 
 // DELETE recordatorios
-app.delete('/api/recordatorios/:alumnoId/:mes/:anio', async (req, res) => {
+app.delete('/api/recordatorios/:alumnoId/:mes/:anio/:tipo?', async (req, res) => {
     try {
         const { alumnoId, mes, anio } = req.params;
-        await eliminarRecordatorioEnviado(alumnoId, parseInt(mes), parseInt(anio));
+        const tipoRaw = (req.params as { tipo?: string }).tipo;
+        const tipoParam: RecordatorioTipo = (tipoRaw as RecordatorioTipo) || 'manual';
+        await eliminarRecordatorioEnviado(alumnoId, parseInt(mes), parseInt(anio), tipoParam);
         res.json({ ok: true });
     } catch (error) {
         console.error('Error eliminando recordatorio:', error);
@@ -482,9 +491,9 @@ app.delete('/api/recordatorios/:alumnoId/:mes/:anio', async (req, res) => {
 });
 
 // GET envios realizados (for frontend info)
-app.get('/api/envios', (_req, res) => {
-    const data = readDataLocal();
-    res.json(data.enviosRealizados);
+app.get('/api/envios', async (_req, res) => {
+    const map = await obtenerRecordatoriosEnviados();
+    res.json(map);
 });
 
 // POST force cron (manual trigger)

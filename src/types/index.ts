@@ -1,5 +1,9 @@
 export type EstadoAlumno = 'activo' | 'becado' | 'suspendido' | 'inactivo';
 
+export type RecordatorioTipo = 'manual' | 'primer_recordatorio' | 'segundo_recordatorio';
+
+export type RecordatorioMap = Record<string, Partial<Record<RecordatorioTipo, string>>>;
+
 export interface Alumno {
     id: string;
     nombre: string;
