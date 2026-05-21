@@ -2,6 +2,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import crypto from 'crypto';
 import { supabase, isSupabaseConfigured, DbAlumno, DbPago, DbActividad, DbRecordatorioEnviado } from './supabase.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -11,7 +12,7 @@ const MENSAJES_CONFIG_KEY = 'mensajesEnviados';
 
 // ─── Generador de ID de 6 dígitos ────────────────────────────────────────────
 function generateShortId(): string {
-    return Math.floor(100000 + Math.random() * 900000).toString();
+    return crypto.randomInt(100000, 1000000).toString();
 }
 
 // ─── Tipos locales ──────────────────────────────────────────────────────────
@@ -422,8 +423,14 @@ export async function obtenerConfig(): Promise<Config> {
 }
 
 export async function guardarConfig(config: Config): Promise<void> {
+    const currentConfig = await obtenerConfig();
+    const finalConfig = { ...config };
+    if (finalConfig.evolutionApiKey === '••••••••') {
+        finalConfig.evolutionApiKey = currentConfig.evolutionApiKey;
+    }
+
     if (isSupabaseConfigured() && supabase) {
-        const entries = Object.entries(config);
+        const entries = Object.entries(finalConfig);
         for (const [clave, valor] of entries) {
             await supabase
                 .from('configuracion')
@@ -434,7 +441,7 @@ export async function guardarConfig(config: Config): Promise<void> {
     
     // Fallback JSON
     const store = readDataJSON();
-    store.config = config;
+    store.config = finalConfig;
     writeDataJSON(store);
 }
 
@@ -559,17 +566,25 @@ export async function obtenerTodo(): Promise<any> {
             obtenerMensajesEnviados()
         ]);
         
+        const maskedConfig = {
+            ...config,
+            evolutionApiKey: config.evolutionApiKey ? '••••••••' : ''
+        };
+        
         return {
             alumnos,
             pagos,
             activity,
-            config,
+            config: maskedConfig,
             mensajesEnviados,
             enviosRealizados: [],
             recordatoriosEnviados
         };
     }
     const data = readDataJSON();
+    if (data.config) {
+        data.config.evolutionApiKey = data.config.evolutionApiKey ? '••••••••' : '';
+    }
     const recordatoriosEnviados: RecordatoriosMap = {};
     for (const r of data.enviosRealizados || []) {
         if (!r.alumnoId) continue;

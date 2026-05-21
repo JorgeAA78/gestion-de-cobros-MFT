@@ -2,14 +2,25 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Alumno, PagoMensual, AppConfig, ActivityLog, RecordatorioMap, RecordatorioTipo } from '../types';
 
+import { useAuthStore } from './authStore';
+
 const API_BASE = (import.meta as any).env?.PROD ? '/api' : 'http://localhost:3001/api';
 
 const RECORDATORIO_TIPOS: RecordatorioTipo[] = ['manual', 'primer_recordatorio', 'segundo_recordatorio'];
 
-// ─── API sync helpers ────────────────────────────────────────
+// ─── API sync helpers con Autenticación ────────────────────────
+async function getAuthHeaders(): Promise<HeadersInit> {
+    const token = useAuthStore.getState().token;
+    return {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+    };
+}
+
 async function apiGet<T>(path: string): Promise<T | null> {
     try {
-        const res = await fetch(`${API_BASE}${path}`);
+        const headers = await getAuthHeaders();
+        const res = await fetch(`${API_BASE}${path}`, { headers });
         if (res.ok) return res.json();
     } catch { }
     return null;
@@ -17,9 +28,10 @@ async function apiGet<T>(path: string): Promise<T | null> {
 
 async function apiPost(path: string, body: any) {
     try {
+        const headers = await getAuthHeaders();
         await fetch(`${API_BASE}${path}`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers,
             body: JSON.stringify(body),
         });
     } catch { }
@@ -27,9 +39,10 @@ async function apiPost(path: string, body: any) {
 
 async function apiPut(path: string, body: any) {
     try {
+        const headers = await getAuthHeaders();
         await fetch(`${API_BASE}${path}`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            headers,
             body: JSON.stringify(body),
         });
     } catch { }
@@ -37,7 +50,11 @@ async function apiPut(path: string, body: any) {
 
 async function apiDelete(path: string) {
     try {
-        await fetch(`${API_BASE}${path}`, { method: 'DELETE' });
+        const headers = await getAuthHeaders();
+        await fetch(`${API_BASE}${path}`, { 
+            method: 'DELETE',
+            headers
+        });
     } catch { }
 }
 
@@ -185,22 +202,24 @@ export const useStore = create<StoreState>()(
                 set((s) => ({ alumnos: [...s.alumnos, alumno] }));
 
                 // Sincronizar el ID real de Supabase para que delete/update funcionen
-                fetch(`${API_BASE}/alumnos`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(alumno),
-                })
-                    .then((res) => res.json())
-                    .then((result) => {
-                        if (result.alumno?.id && result.alumno.id !== tempId) {
-                            set((s) => ({
-                                alumnos: s.alumnos.map((a) =>
-                                    a.id === tempId ? { ...a, id: result.alumno.id } : a
-                                ),
-                            }));
-                        }
+                getAuthHeaders().then((headers) => {
+                    fetch(`${API_BASE}/alumnos`, {
+                        method: 'POST',
+                        headers,
+                        body: JSON.stringify(alumno),
                     })
-                    .catch(() => { });
+                        .then((res) => res.json())
+                        .then((result) => {
+                            if (result.alumno?.id && result.alumno.id !== tempId) {
+                                set((s) => ({
+                                    alumnos: s.alumnos.map((a) =>
+                                        a.id === tempId ? { ...a, id: result.alumno.id } : a
+                                    ),
+                                }));
+                            }
+                        })
+                        .catch(() => { });
+                });
 
                 return alumno;
             },

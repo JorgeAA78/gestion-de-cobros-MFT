@@ -2,6 +2,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import crypto from 'crypto';
 import { Invitacion } from './types.js';
 import { supabase, isSupabaseConfigured, DbInvitacion } from '../lib/supabase.js';
 
@@ -48,7 +49,7 @@ function generarCodigoInvitacion(): string {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Sin I, O, 0, 1 para evitar confusión
     let codigo = '';
     for (let i = 0; i < 8; i++) {
-        codigo += chars.charAt(Math.floor(Math.random() * chars.length));
+        codigo += chars.charAt(crypto.randomInt(0, chars.length));
     }
     return codigo;
 }
@@ -81,7 +82,7 @@ export async function crearInvitacion(adminId: string, diasValidez: number = 7):
     // Fallback JSON
     const store = readInvitaciones();
     const invitacion: Invitacion = {
-        id: Date.now().toString(36) + Math.random().toString(36).substr(2, 5),
+        id: Date.now().toString(36) + crypto.randomBytes(3).toString('hex'),
         codigo: generarCodigoInvitacion(),
         creadoPor: adminId,
         creadoEn: ahora.toISOString(),

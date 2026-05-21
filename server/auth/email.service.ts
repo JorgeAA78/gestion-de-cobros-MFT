@@ -1,6 +1,7 @@
 // ─── Servicio de envío de emails ─────────────────────────────────────────────
 // Usamos EmailJS (API HTTP) porque Railway bloquea SMTP saliente
 import dotenv from 'dotenv';
+import crypto from 'crypto';
 
 dotenv.config();
 
@@ -18,7 +19,7 @@ console.log(`   Public Key: ${EMAILJS_PUBLIC_KEY ? '✓ Configurada' : '⚠️ N
 
 // ─── Generar token de 4 dígitos ──────────────────────────────────────────────
 export function generarToken4Digitos(): string {
-    return Math.floor(1000 + Math.random() * 9000).toString();
+    return crypto.randomInt(1000, 10000).toString();
 }
 
 // ─── Función para enviar email via EmailJS API ──────────────────────────────

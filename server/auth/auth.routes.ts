@@ -11,9 +11,12 @@ import {
     eliminarInvitacionHandler,
     validarCodigoInvitacion
 } from './auth.controller.js';
-import { authMiddleware } from './auth.middleware.js';
+import { authMiddleware, rateLimiter } from './auth.middleware.js';
 
 const router = Router();
+
+const loginLimiter = rateLimiter(5, 60 * 1000); // 5 intentos por minuto
+const verificarLimiter = rateLimiter(5, 60 * 1000); // 5 intentos por minuto
 
 // ─── Rutas públicas (no requieren autenticación) ─────────────────────────────
 
@@ -21,13 +24,13 @@ const router = Router();
 router.post('/registro', registrarAdmin);
 
 // POST /api/auth/verificar - Verificar email con token de 4 dígitos
-router.post('/verificar', verificarEmail);
+router.post('/verificar', verificarLimiter, verificarEmail);
 
 // POST /api/auth/reenviar-token - Reenviar código de verificación
 router.post('/reenviar-token', reenviarToken);
 
 // POST /api/auth/login - Iniciar sesión
-router.post('/login', loginAdmin);
+router.post('/login', loginLimiter, loginAdmin);
 
 // GET /api/auth/invitaciones/validar/:codigo - Validar código de invitación (público)
 router.get('/invitaciones/validar/:codigo', validarCodigoInvitacion);

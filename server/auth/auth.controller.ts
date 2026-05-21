@@ -1,6 +1,7 @@
 // ─── Controlador de autenticación ────────────────────────────────────────────
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 import { 
     buscarAdminPorEmail, 
     buscarAdminPorId, 
@@ -25,7 +26,7 @@ import { Admin, RegistroRequest, LoginRequest, VerificarEmailRequest } from './t
 
 // ─── Generar ID único ────────────────────────────────────────────────────────
 function generarId(): string {
-    return Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
+    return Date.now().toString(36) + crypto.randomBytes(5).toString('hex');
 }
 
 // ─── POST /api/auth/registro ─────────────────────────────────────────────────

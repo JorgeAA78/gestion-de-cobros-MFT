@@ -1,4 +1,14 @@
+import { useAuthStore } from '../store/authStore';
+
 const API_BASE = (import.meta as any).env?.PROD ? '/api' : 'http://localhost:3001/api';
+
+async function getAuthHeaders() {
+    const token = useAuthStore.getState().token;
+    return {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+    };
+}
 
 export async function sendWhatsApp(
     apiUrl: string,
@@ -8,9 +18,10 @@ export async function sendWhatsApp(
     text: string
 ): Promise<{ success: boolean; error?: string }> {
     try {
+        const headers = await getAuthHeaders();
         const res = await fetch(`${API_BASE}/whatsapp/send`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers,
             body: JSON.stringify({ apiUrl, apiKey, instance, number, text }),
         });
         return await res.json();
@@ -25,9 +36,10 @@ export async function testConnection(
     instance: string
 ): Promise<{ connected: boolean; state?: string; error?: string }> {
     try {
+        const headers = await getAuthHeaders();
         const res = await fetch(`${API_BASE}/whatsapp/test`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers,
             body: JSON.stringify({ apiUrl, apiKey, instance }),
         });
         return await res.json();

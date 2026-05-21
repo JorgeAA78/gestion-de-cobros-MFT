@@ -180,7 +180,8 @@ _Mutantes Fight Team - BJJ_`;
 
 async function envioAutomatico() {
     const data = await obtenerTodo();
-    const { config } = data;
+    // Obtener la configuración no enmascarada para evitar usar '••••••••' en las peticiones reales
+    const config = await obtenerConfig();
 
     if (!config.evolutionApiUrl || !config.evolutionApiKey || !config.evolutionInstance) {
         console.log('⏭️  [CRON] Evolution API no configurada, saltando...');
@@ -321,13 +322,16 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Importar middleware de autenticación
+import { authMiddleware } from './auth/index.js';
+
 // ─── Rutas de Autenticación ─────────────────────────────────
 app.use('/api/auth', authRoutes);
 
-// --- API Routes ---
+// --- API Routes (Protegidas por JWT) ---
 
 // GET all data
-app.get('/api/data', async (_req, res) => {
+app.get('/api/data', authMiddleware, async (_req, res) => {
     try {
         const data = await obtenerTodo();
         res.json(data);
@@ -338,7 +342,7 @@ app.get('/api/data', async (_req, res) => {
 });
 
 // PUT full sync (frontend pushes state)
-app.put('/api/data', async (req, res) => {
+app.put('/api/data', authMiddleware, async (req, res) => {
     try {
         await sincronizarTodo(req.body);
         res.json({ ok: true });
@@ -349,7 +353,7 @@ app.put('/api/data', async (req, res) => {
 });
 
 // POST alumno
-app.post('/api/alumnos', async (req, res) => {
+app.post('/api/alumnos', authMiddleware, async (req, res) => {
     try {
         const alumno = await crearAlumno(req.body);
         res.json({ ok: true, alumno });
@@ -360,7 +364,7 @@ app.post('/api/alumnos', async (req, res) => {
 });
 
 // POST import alumnos
-app.post('/api/alumnos/import', async (req, res) => {
+app.post('/api/alumnos/import', authMiddleware, async (req, res) => {
     try {
         const list = req.body.alumnos || [];
         const alumnos = await crearAlumnosBulk(list);
@@ -372,9 +376,9 @@ app.post('/api/alumnos/import', async (req, res) => {
 });
 
 // PUT alumno (update individual fields like estado)
-app.put('/api/alumnos/:id', async (req, res) => {
+app.put('/api/alumnos/:id', authMiddleware, async (req, res) => {
     try {
-        const ok = await actualizarAlumno(req.params.id, req.body);
+        const ok = await actualizarAlumno(req.params.id as string, req.body);
         if (ok) {
             res.json({ ok: true });
         } else {
@@ -387,9 +391,9 @@ app.put('/api/alumnos/:id', async (req, res) => {
 });
 
 // DELETE alumno
-app.delete('/api/alumnos/:id', async (req, res) => {
+app.delete('/api/alumnos/:id', authMiddleware, async (req, res) => {
     try {
-        await eliminarAlumno(req.params.id);
+        await eliminarAlumno(req.params.id as string);
         res.json({ ok: true });
     } catch (error) {
         console.error('Error eliminando alumno:', error);
@@ -398,7 +402,7 @@ app.delete('/api/alumnos/:id', async (req, res) => {
 });
 
 // DELETE multiple alumnos
-app.post('/api/alumnos/delete-bulk', async (req, res) => {
+app.post('/api/alumnos/delete-bulk', authMiddleware, async (req, res) => {
     try {
         const ids = req.body.ids || [];
         await eliminarAlumnosBulk(ids);
@@ -410,7 +414,7 @@ app.post('/api/alumnos/delete-bulk', async (req, res) => {
 });
 
 // POST pago
-app.post('/api/pagos', async (req, res) => {
+app.post('/api/pagos', authMiddleware, async (req, res) => {
     try {
         const { alumnoId, mes, anio, estado, monto } = req.body;
         if (estado === 'pagado') {
@@ -426,7 +430,7 @@ app.post('/api/pagos', async (req, res) => {
 });
 
 // PUT config
-app.put('/api/config', async (req, res) => {
+app.put('/api/config', authMiddleware, async (req, res) => {
     try {
         const currentConfig = await obtenerConfig();
         await guardarConfig({ ...currentConfig, ...req.body });
@@ -438,7 +442,7 @@ app.put('/api/config', async (req, res) => {
 });
 
 // POST activity
-app.post('/api/activity', async (req, res) => {
+app.post('/api/activity', authMiddleware, async (req, res) => {
     try {
         await agregarActividad(req.body);
         res.json({ ok: true });
@@ -449,7 +453,7 @@ app.post('/api/activity', async (req, res) => {
 });
 
 // POST increment messages
-app.post('/api/mensajes/increment', async (req, res) => {
+app.post('/api/mensajes/increment', authMiddleware, async (req, res) => {
     try {
         const total = await incrementarMensajesEnviados(req.body.count || 1);
         res.json({ ok: true, total });
@@ -460,7 +464,7 @@ app.post('/api/mensajes/increment', async (req, res) => {
 });
 
 // POST recordatorios
-app.post('/api/recordatorios', async (req, res) => {
+app.post('/api/recordatorios', authMiddleware, async (req, res) => {
     try {
         const { alumnoId, mes, anio } = req.body;
         const tipo = (req.body.tipo as RecordatorioTipo) || 'manual';
@@ -477,9 +481,11 @@ app.post('/api/recordatorios', async (req, res) => {
 });
 
 // DELETE recordatorios
-app.delete('/api/recordatorios/:alumnoId/:mes/:anio/:tipo', async (req, res) => {
+app.delete('/api/recordatorios/:alumnoId/:mes/:anio/:tipo', authMiddleware, async (req, res) => {
     try {
-        const { alumnoId, mes, anio } = req.params;
+        const alumnoId = req.params.alumnoId as string;
+        const mes = req.params.mes as string;
+        const anio = req.params.anio as string;
         const tipoRaw = (req.params as { tipo?: string }).tipo;
         const tipoParam: RecordatorioTipo = (tipoRaw as RecordatorioTipo) || 'manual';
         await eliminarRecordatorioEnviado(alumnoId, parseInt(mes), parseInt(anio), tipoParam);
@@ -491,13 +497,13 @@ app.delete('/api/recordatorios/:alumnoId/:mes/:anio/:tipo', async (req, res) => 
 });
 
 // GET envios realizados (for frontend info)
-app.get('/api/envios', async (_req, res) => {
+app.get('/api/envios', authMiddleware, async (_req, res) => {
     const map = await obtenerRecordatoriosEnviados();
     res.json(map);
 });
 
 // POST force cron (manual trigger)
-app.post('/api/cron/trigger', async (_req, res) => {
+app.post('/api/cron/trigger', authMiddleware, async (_req, res) => {
     console.log('🔧 [MANUAL] Trigger de cron recibido');
     await envioAutomatico();
     res.json({ ok: true });
@@ -505,7 +511,7 @@ app.post('/api/cron/trigger', async (_req, res) => {
 
 // ─── Evolution API Proxy (evita CORS) ────────────────────────
 // POST test connection
-app.post('/api/whatsapp/test', async (req, res) => {
+app.post('/api/whatsapp/test', authMiddleware, async (req, res) => {
     const { apiUrl, apiKey, instance } = req.body;
 
     // Limpiar URL (quitar /manager si existe)
@@ -514,9 +520,16 @@ app.post('/api/whatsapp/test', async (req, res) => {
 
     console.log(`🔍 [WhatsApp Test] URL: ${testUrl}`);
 
+    // Resolver API key si es enmascarada
+    let realApiKey = apiKey;
+    if (apiKey === '••••••••') {
+        const config = await obtenerConfig();
+        realApiKey = config.evolutionApiKey;
+    }
+
     try {
         const response = await fetch(testUrl, {
-            headers: { apikey: apiKey },
+            headers: { apikey: realApiKey },
         });
 
         const text = await response.text();
@@ -539,7 +552,7 @@ app.post('/api/whatsapp/test', async (req, res) => {
 });
 
 // POST send whatsapp message
-app.post('/api/whatsapp/send', async (req, res) => {
+app.post('/api/whatsapp/send', authMiddleware, async (req, res) => {
     const { apiUrl, apiKey, instance, number, text } = req.body;
 
     // Limpiar URL (quitar /manager si existe)
@@ -549,10 +562,17 @@ app.post('/api/whatsapp/send', async (req, res) => {
     console.log(`📤 [WhatsApp Send] URL: ${sendUrl}`);
     console.log(`📤 [WhatsApp Send] To: ${number}`);
 
+    // Resolver API key si es enmascarada
+    let realApiKey = apiKey;
+    if (apiKey === '••••••••') {
+        const config = await obtenerConfig();
+        realApiKey = config.evolutionApiKey;
+    }
+
     try {
         const response = await fetch(sendUrl, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', apikey: apiKey },
+            headers: { 'Content-Type': 'application/json', apikey: realApiKey },
             body: JSON.stringify({ number, text }),
         });
 
@@ -571,7 +591,7 @@ app.post('/api/whatsapp/send', async (req, res) => {
 });
 
 // DELETE clear data (solo limpia JSON local, no Supabase)
-app.delete('/api/data', (_req, res) => {
+app.delete('/api/data', authMiddleware, (_req, res) => {
     writeDataLocal({
         alumnos: [], pagos: [], activity: [], mensajesEnviados: 0,
         enviosRealizados: [],
