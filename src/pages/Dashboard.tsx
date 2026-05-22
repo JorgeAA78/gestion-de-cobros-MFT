@@ -1,6 +1,6 @@
 import { useStore } from '../store/useStore';
 import { MONTH_NAMES, ESTADO_LABELS, type EstadoAlumno, type Alumno } from '../types';
-import { formatCurrency } from '../services/evolution';
+import { formatCurrency, formatWhatsApp } from '../services/evolution';
 import { useState, useEffect, useMemo } from 'react';
 import { showToast } from '../components/Toast';
 
@@ -67,7 +67,15 @@ export default function Dashboard() {
     const openEdit = (a: Alumno) => {
         setEditAlumno(a);
         setEditNombre(a.nombre);
-        setEditWhatsapp(a.whatsapp);
+        
+        let displayWhatsapp = a.whatsapp || '';
+        if (displayWhatsapp.startsWith('549')) {
+            displayWhatsapp = displayWhatsapp.substring(3);
+        } else if (displayWhatsapp.startsWith('54')) {
+            displayWhatsapp = displayWhatsapp.substring(2);
+        }
+        setEditWhatsapp(displayWhatsapp);
+        
         setEditCuota(String(a.cuota));
         setEditDiaVenc(a.diaVencimiento ?? config.diaEnvio ?? 5);
         setEditPlan(a.plan);
@@ -81,7 +89,7 @@ export default function Dashboard() {
         const cuotaNum = parseInt(editCuota) || 0;
         updateAlumno(editAlumno.id, {
             nombre: editNombre.trim() || editAlumno.nombre,
-            whatsapp: editWhatsapp.trim(),
+            whatsapp: formatWhatsApp(editWhatsapp.trim()),
             cuota: cuotaNum,
             diaVencimiento: editDiaVenc,
             plan: editPlan,
