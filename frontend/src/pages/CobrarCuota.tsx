@@ -2,13 +2,11 @@ import { useState, useMemo, type FormEvent } from 'react';
 import { useStore } from '../store/useStore';
 import { MONTH_NAMES } from '../types';
 import { showToast } from '../components/Toast';
-import { formatWhatsApp, formatCurrency, sendWhatsApp, buildMessage } from '../services/evolution';
+import { formatWhatsApp, formatCurrency, sendWhatsAppTemplate, sanitizeInput, buildMessage } from '../services/ycloud';
 
-const TEMPLATES: Record<string, string> = {
-    amigable: `¡Hola {nombre}! 👋 \n\nTe recordamos que la cuota de *{mes}* ya está disponible para abonar:\n\n💰 Monto: *{monto}*\n📋 Plan: *{plan}*\n📅 Fecha límite: {fecha}\n\nAlias: *mutantesbjj*
-a nombre de: Pablo Sebastian Echazu Bloser\n\n*Por favor, enviar comprobante al realizar el pago*\n\n¡Te esperamos en el tatami! 💪\n\n_Mutantes Fight Team - BJJ_`,
-    formal: `Estimado/a {nombre},\n\nLe informamos que la cuota de *{mes}* se encuentra pendiente.\n\n💰 Monto: *{monto}*\n📋 Plan: *{plan}*\n📅 Vencimiento: {fecha}\n\n{datos_pago}\n\n*[Por favor, enviar comprobante al realizar el pago]*\n\n_Mutantes Fight Team - BJJ_`,
-    urgente: `⚠️ *AVISO* - {nombre}\n\nTu cuota de *{mes}* está *VENCIDA*.\n\n💰 Monto: *{monto}*\n📋 Plan: *{plan}*\n\n⚡ Regularizá tu situación para no perder tu lugar.\n\n{datos_pago}\n\n*[Por favor, enviar comprobante al realizar el pago]*\n\n_Mutantes Fight Team - BJJ_`,
+const PREVIEW_TEMPLATES: Record<string, string> = {
+    disponible: `¡Hola {nombre}! 👋 \n\nTe recordamos que la cuota de {mes} ya está disponible para abonar:\n\n💰 Monto: {monto}\n📋 Plan: {plan}\n📅 Fecha límite: {fecha}\n\nAlias: mutantesbjj\na nombre de: Pablo Sebastian Echazu Bloser\n\nPor favor, enviar comprobante al realizar el pago\n\n¡Te esperamos en el tatami! 💪\n\nMutantes Fight Team - BJJ`,
+    recordatorio: `¡Hola {nombre}! 👋 \n\nTe recordamos que la cuota de {mes} está pendiente:\n\n💰 Monto: {monto}\n📋 Plan: {plan}\n\nAlias: mutantesbjj\na nombre de: Pablo Sebastian Echazu Bloser\n\nPor favor, enviar comprobante al realizar el pago\n\n¡Te esperamos en el tatami! 💪 \n\nMutantes Fight Team - BJJ`,
 };
 
 export default function CobrarCuota() {
@@ -27,8 +25,7 @@ export default function CobrarCuota() {
     const [plan, setPlan] = useState('libre');
     const [fechaLimite, setFechaLimite] = useState('');
     const [datosPago, setDatosPago] = useState(config.datosPago || '');
-    const [plantilla, setPlantilla] = useState('amigable');
-    const [mensaje, setMensaje] = useState(TEMPLATES.amigable);
+    const [plantilla, setPlantilla] = useState<'disponible' | 'recordatorio'>('disponible');
     const [loading, setLoading] = useState(false);
     const [alumnoSearch, setAlumnoSearch] = useState('');
     const filteredAlumnos = useMemo(() => {
@@ -48,42 +45,44 @@ export default function CobrarCuota() {
         }
     };
 
-    const preview = buildMessage(mensaje, {
+    const preview = buildMessage(PREVIEW_TEMPLATES[plantilla], {
         nombre: nombre || '{nombre}',
         monto: monto ? formatCurrency(parseInt(monto)) : '{monto}',
         mes: MONTH_NAMES[mes - 1],
         plan: plan === 'libre' ? 'Libre' : '3 Veces por Semana',
         fecha: fechaLimite ? new Date(fechaLimite).toLocaleDateString('es-AR') : 'A convenir',
-        datos_pago: datosPago ? `💳 *Pago:* ${datosPago}` : '',
     });
 
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
-        if (!config.evolutionApiUrl) {
-            showToast('⚙️ Configurá Evolution API primero', 'warning');
+        if (!config.ycloudApiKey) {
+            showToast('⚙️ Configurá YCloud primero', 'warning');
             return;
         }
         setLoading(true);
 
-        const finalMsg = buildMessage(mensaje, {
-            nombre,
-            monto: formatCurrency(parseInt(monto) || 0),
-            mes: MONTH_NAMES[mes - 1],
-            plan: plan === 'libre' ? 'Libre' : '3 Veces por Semana',
-            fecha: fechaLimite ? new Date(fechaLimite).toLocaleDateString('es-AR') : 'A convenir',
-            datos_pago: datosPago ? `💳 *Pago:* ${datosPago}` : '',
-        });
-
+        const sanitizedNombre = sanitizeInput(nombre);
+        const sanitizedMonto = parseInt(monto) || 0;
         const num = formatWhatsApp(whatsapp);
-        const res = await sendWhatsApp(config.evolutionApiUrl, config.evolutionApiKey, config.evolutionInstance, num, finalMsg);
+
+        const mesText = MONTH_NAMES[mes - 1];
+        const montoText = formatCurrency(sanitizedMonto);
+        const planText = plan === 'libre' ? 'Libre' : '3 Veces por Semana';
+        const fechaText = fechaLimite ? new Date(fechaLimite).toLocaleDateString('es-AR') : 'A convenir';
+
+        const vars = plantilla === 'disponible'
+            ? [sanitizedNombre, mesText, montoText, planText, fechaText]
+            : [sanitizedNombre, mesText, montoText, planText];
+
+        const res = await sendWhatsAppTemplate(num, plantilla, vars);
 
         if (res.success) {
-            showToast(`✅ Cobro enviado a ${nombre}`, 'success');
+            showToast(`✅ Cobro enviado a ${sanitizedNombre}`, 'success');
             incrementMensajes();
-            addActivity('sent', `Cobro ${MONTH_NAMES[mes - 1]} enviado a ${nombre}: ${formatCurrency(parseInt(monto))}`);
+            addActivity('sent', `Cobro ${mesText} enviado a ${sanitizedNombre}: ${montoText}`);
         } else {
             showToast(`❌ Error: ${res.error}`, 'error');
-            addActivity('failed', `Error cobro a ${nombre}: ${res.error}`);
+            addActivity('failed', `Error cobro a ${sanitizedNombre}: ${res.error}`);
         }
         setLoading(false);
     };
@@ -195,22 +194,15 @@ export default function CobrarCuota() {
                         </div>
                     </div>
 
-                    <h3 className="section-title mt-2">💬 Mensaje</h3>
+                    <h3 className="section-title mt-2">💬 Plantilla de WhatsApp</h3>
                     <div className="form-group">
                         <label>Plantilla</label>
                         <select className="form-select" value={plantilla} onChange={(e) => {
-                            setPlantilla(e.target.value);
-                            if (TEMPLATES[e.target.value]) setMensaje(TEMPLATES[e.target.value]);
+                            setPlantilla(e.target.value as 'disponible' | 'recordatorio');
                         }}>
-                            <option value="amigable">😊 Amigable</option>
-                            <option value="formal">📋 Formal</option>
-                            <option value="urgente">⚠️ Urgente</option>
-                            <option value="custom">✏️ Personalizado</option>
+                            <option value="disponible">📅 Aviso de Cuota Disponible (disponible)</option>
+                            <option value="recordatorio">💰 Recordatorio de Pago Pendiente (recordatorio)</option>
                         </select>
-                    </div>
-
-                    <div className="form-group">
-                        <textarea className="form-textarea" value={mensaje} onChange={(e) => setMensaje(e.target.value)} rows={6} />
                     </div>
 
                     <div className="message-preview">

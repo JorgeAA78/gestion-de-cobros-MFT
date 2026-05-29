@@ -1,6 +1,6 @@
 import { useStore } from '../store/useStore';
 import { MONTH_NAMES, ESTADO_LABELS, type EstadoAlumno, type Alumno } from '../types';
-import { formatCurrency, formatWhatsApp } from '../services/evolution';
+import { formatCurrency, formatWhatsApp, sanitizeInput } from '../services/ycloud';
 import { useState, useEffect, useMemo } from 'react';
 import { showToast } from '../components/Toast';
 
@@ -87,15 +87,17 @@ export default function Dashboard() {
     const saveEdit = () => {
         if (!editAlumno) return;
         const cuotaNum = parseInt(editCuota) || 0;
+        const nameVal = editNombre.trim() || editAlumno.nombre;
+        const sanitizedNombre = sanitizeInput(nameVal);
         updateAlumno(editAlumno.id, {
-            nombre: editNombre.trim() || editAlumno.nombre,
+            nombre: sanitizedNombre,
             whatsapp: formatWhatsApp(editWhatsapp.trim()),
             cuota: cuotaNum,
             diaVencimiento: editDiaVenc,
             plan: editPlan,
             estado: editEstado,
         });
-        showToast(`✅ Alumno ${editNombre.trim() || editAlumno.nombre} actualizado`, 'success');
+        showToast(`✅ Alumno ${sanitizedNombre} actualizado`, 'success');
         closeEdit();
     };
 

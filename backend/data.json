@@ -1,0 +1,233 @@
+{
+  "alumnos": [],
+  "pagos": [],
+  "config": {
+    "evolutionApiUrl": "https://n8ncurso2025-evolution-api.mos4xj.easypanel.host",
+    "evolutionApiKey": "72A073E91C8F-4781-944A-82E410E3C567",
+    "evolutionInstance": "mutantes-bjj",
+    "diaEnvio": 10,
+    "mensajePlantilla": "",
+    "datosPago": "Mutantesbjj"
+  },
+  "activity": [
+    {
+      "type": "sent",
+      "message": "Recordatorios Febrero: 1 enviados, 0 fallidos",
+      "timestamp": "2026-02-28T20:11:43.110Z"
+    },
+    {
+      "type": "sent",
+      "message": "Cobro Febrero enviado a Jorge Ariel Altamirano: $ 25.000",
+      "timestamp": "2026-02-28T20:11:16.309Z"
+    },
+    {
+      "type": "sent",
+      "message": "Cobro Febrero enviado a Antonella Altamirano: $ 30.000",
+      "timestamp": "2026-02-27T21:58:26.466Z"
+    },
+    {
+      "type": "sent",
+      "message": "Alumno registrado: Antonella Altamirano (Libre)",
+      "timestamp": "2026-02-27T21:56:56.272Z"
+    },
+    {
+      "type": "sent",
+      "message": "Cobro Febrero enviado a Jorge Ariel Altamirano: $ 25.000",
+      "timestamp": "2026-02-27T16:50:19.959Z"
+    },
+    {
+      "type": "sent",
+      "message": "Cobro Febrero enviado a Jorge Ariel Altamirano: $ 25.000",
+      "timestamp": "2026-02-27T16:12:15.440Z"
+    },
+    {
+      "type": "sent",
+      "message": "Configuración actualizada",
+      "timestamp": "2026-02-27T15:35:32.313Z"
+    },
+    {
+      "type": "sent",
+      "message": "Alumno registrado: Sandra Aramayo (Libre)",
+      "timestamp": "2026-02-27T12:54:13.151Z"
+    },
+    {
+      "type": "sent",
+      "message": "Recordatorios Febrero: 1 enviados, 0 fallidos",
+      "timestamp": "2026-02-27T12:49:12.943Z"
+    },
+    {
+      "type": "sent",
+      "message": "Configuración actualizada",
+      "timestamp": "2026-02-27T12:47:42.549Z"
+    },
+    {
+      "type": "sent",
+      "message": "Recordatorios Febrero: 1 enviados, 0 fallidos",
+      "timestamp": "2026-02-27T12:36:36.258Z"
+    },
+    {
+      "type": "sent",
+      "message": "Recordatorios Febrero: 1 enviados, 0 fallidos",
+      "timestamp": "2026-02-27T12:25:54.828Z"
+    },
+    {
+      "type": "sent",
+      "message": "Recordatorios Febrero: 1 enviados, 0 fallidos",
+      "timestamp": "2026-02-27T12:25:21.300Z"
+    },
+    {
+      "type": "sent",
+      "message": "Cobro Febrero enviado a Jorge Ariel Altamirano: $ 25.000",
+      "timestamp": "2026-02-27T12:23:15.575Z"
+    },
+    {
+      "type": "sent",
+      "message": "Recordatorios Febrero: 1 enviados, 0 fallidos",
+      "timestamp": "2026-02-27T12:18:55.682Z"
+    },
+    {
+      "type": "sent",
+      "message": "Recordatorios Febrero: 1 enviados, 0 fallidos",
+      "timestamp": "2026-02-27T12:04:16.681Z"
+    },
+    {
+      "type": "sent",
+      "message": "🤖 [AUTO] Recordatorios Febrero: 1 enviados, 0 fallidos",
+      "timestamp": "2026-02-27T12:00:00.052Z"
+    },
+    {
+      "type": "sent",
+      "message": "Recordatorios Febrero: 1 enviados, 0 fallidos",
+      "timestamp": "2026-02-27T11:48:15.267Z"
+    },
+    {
+      "type": "sent",
+      "message": "Configuración actualizada",
+      "timestamp": "2026-02-27T11:47:57.586Z"
+    },
+    {
+      "type": "sent",
+      "message": "Cobro Febrero enviado a Jorge Ariel Altamirano: $ 25.000",
+      "timestamp": "2026-02-27T11:47:10.475Z"
+    },
+    {
+      "type": "sent",
+      "message": "Cobro Febrero enviado a Jorge Ariel Altamirano: $ 25.000",
+      "timestamp": "2026-02-27T11:46:47.023Z"
+    },
+    {
+      "type": "sent",
+      "message": "Cobro Febrero enviado a Jorge Ariel Altamirano: $ 25.000",
+      "timestamp": "2026-02-27T11:45:45.932Z"
+    },
+    {
+      "type": "sent",
+      "message": "Configuración actualizada",
+      "timestamp": "2026-02-27T11:33:55.005Z"
+    },
+    {
+      "type": "sent",
+      "message": "Cobro Marzo enviado a Agostina  Altamirano : $ 25.000",
+      "timestamp": "2026-02-27T02:36:07.793Z"
+    },
+    {
+      "type": "sent",
+      "message": "Recordatorios Febrero: 1 enviados, 0 fallidos",
+      "timestamp": "2026-02-26T23:25:20.199Z"
+    },
+    {
+      "type": "sent",
+      "message": "Cobro Febrero enviado a Nicolas Gabriel  Geron: $ 25.000",
+      "timestamp": "2026-02-26T23:23:19.520Z"
+    },
+    {
+      "type": "sent",
+      "message": "Configuración actualizada",
+      "timestamp": "2026-02-26T23:15:24.386Z"
+    },
+    {
+      "type": "sent",
+      "message": "Recordatorios Febrero: 1 enviados, 0 fallidos",
+      "timestamp": "2026-02-26T22:19:46.301Z"
+    },
+    {
+      "type": "sent",
+      "message": "Recordatorios Febrero: 1 enviados, 0 fallidos",
+      "timestamp": "2026-02-26T22:16:41.364Z"
+    },
+    {
+      "type": "sent",
+      "message": "Cobro Febrero enviado a Gabriel Atencio: $ 25.000",
+      "timestamp": "2026-02-26T22:12:20.108Z"
+    },
+    {
+      "type": "sent",
+      "message": "Cobro Marzo enviado a Gabriel Atencio: $ 25.000",
+      "timestamp": "2026-02-26T22:10:32.287Z"
+    },
+    {
+      "type": "sent",
+      "message": "Cobro Febrero enviado a Gabriel Atencio: $ 25.000",
+      "timestamp": "2026-02-26T22:09:50.764Z"
+    },
+    {
+      "type": "sent",
+      "message": "Importados 207 alumnos desde Listado.xlsx",
+      "timestamp": "2026-02-26T21:50:45.869Z"
+    },
+    {
+      "type": "sent",
+      "message": "Cobro Febrero enviado a FLACURA: $ 30.000",
+      "timestamp": "2026-02-26T20:08:04.166Z"
+    },
+    {
+      "type": "sent",
+      "message": "Cobro Febrero enviado a DEBIL: $ 30.000",
+      "timestamp": "2026-02-26T20:06:13.057Z"
+    },
+    {
+      "type": "sent",
+      "message": "Cobro Febrero enviado a DEBIL: $ 30.000",
+      "timestamp": "2026-02-26T20:02:33.470Z"
+    },
+    {
+      "type": "sent",
+      "message": "Cobro Febrero enviado a Nico DEBIL: $ 30.000",
+      "timestamp": "2026-02-26T20:01:01.009Z"
+    },
+    {
+      "type": "sent",
+      "message": "Cobro Febrero enviado a Sofia: $ 30.000",
+      "timestamp": "2026-02-26T19:58:45.368Z"
+    },
+    {
+      "type": "sent",
+      "message": "Configuración actualizada",
+      "timestamp": "2026-02-26T19:56:30.617Z"
+    },
+    {
+      "type": "sent",
+      "message": "Configuración actualizada",
+      "timestamp": "2026-02-26T19:54:43.634Z"
+    },
+    {
+      "type": "sent",
+      "message": "Configuración actualizada",
+      "timestamp": "2026-02-26T19:54:00.858Z"
+    },
+    {
+      "type": "sent",
+      "message": "Configuración actualizada",
+      "timestamp": "2026-02-26T19:53:42.744Z"
+    }
+  ],
+  "mensajesEnviados": 38,
+  "enviosRealizados": [
+    {
+      "alumnoId": "ALU-1772142645861-4-hbk3",
+      "mes": 2,
+      "anio": 2026,
+      "fecha": "2026-02-27T12:00:00.052Z"
+    }
+  ]
+}

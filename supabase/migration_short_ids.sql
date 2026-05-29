@@ -70,8 +70,8 @@ ALTER TABLE pagos ENABLE ROW LEVEL SECURITY;
 -- Paso 7: Crear políticas de acceso
 DROP POLICY IF EXISTS "Service role full access alumnos" ON alumnos;
 DROP POLICY IF EXISTS "Service role full access pagos" ON pagos;
-CREATE POLICY "Service role full access alumnos" ON alumnos FOR ALL USING (true);
-CREATE POLICY "Service role full access pagos" ON pagos FOR ALL USING (true);
+CREATE POLICY "Service role full access alumnos" ON alumnos FOR ALL TO service_role USING (true);
+CREATE POLICY "Service role full access pagos" ON pagos FOR ALL TO service_role USING (true);
 
 -- ═══════════════════════════════════════════════════════════════════════════
 -- FIN DE LA MIGRACIÓN

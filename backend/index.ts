@@ -52,7 +52,7 @@ function readDataLocal(): DataStore {
             alumnos: [], pagos: [], activity: [], mensajesEnviados: 0,
             enviosRealizados: [],
             config: {
-                evolutionApiUrl: '', evolutionApiKey: '', evolutionInstance: '',
+                ycloudApiKey: '', ycloudWhatsAppNumber: '',
                 diaEnvio: 5, mensajePlantilla: '', datosPago: '',
             },
         };
@@ -69,14 +69,58 @@ const MONTHS = [
     'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
 ];
 
-async function sendWhatsApp(apiUrl: string, apiKey: string, instance: string, number: string, text: string) {
+function sanitizeString(str: string): string {
+    if (typeof str !== 'string') return '';
+    return str.replace(/<[^>]*>/g, '').trim();
+}
+
+async function sendYCloudTemplate(
+    apiKey: string,
+    fromNumber: string,
+    toNumber: string,
+    templateName: string,
+    parameters: string[]
+): Promise<{ success: boolean; error?: string }> {
     try {
-        const res = await fetch(`${apiUrl}/message/sendText/${instance}`, {
+        const formattedTo = toNumber.startsWith('+') ? toNumber : `+${toNumber.replace(/\D/g, '')}`;
+        const formattedFrom = fromNumber.startsWith('+') ? fromNumber : `+${fromNumber.replace(/\D/g, '')}`;
+        
+        const body = {
+            from: formattedFrom,
+            to: formattedTo,
+            type: 'template',
+            template: {
+                name: templateName.trim(),
+                language: {
+                    code: 'es'
+                },
+                components: [
+                    {
+                        type: 'body',
+                        parameters: parameters.map(p => ({
+                            type: 'text',
+                            text: p
+                        }))
+                    }
+                ]
+            }
+        };
+
+        const res = await fetch('https://api.ycloud.com/v2/whatsapp/messages', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', apikey: apiKey },
-            body: JSON.stringify({ number, text }),
+            headers: {
+                'Content-Type': 'application/json',
+                'X-API-Key': apiKey
+            },
+            body: JSON.stringify(body)
         });
-        return res.ok ? { success: true } : { success: false, error: `HTTP ${res.status}` };
+
+        const responseText = await res.text();
+        if (res.ok) {
+            return { success: true };
+        } else {
+            return { success: false, error: `HTTP ${res.status}: ${responseText.substring(0, 150)}` };
+        }
     } catch (e: any) {
         return { success: false, error: e.message };
     }
@@ -183,8 +227,8 @@ async function envioAutomatico() {
     // Obtener la configuración no enmascarada para evitar usar '••••••••' en las peticiones reales
     const config = await obtenerConfig();
 
-    if (!config.evolutionApiUrl || !config.evolutionApiKey || !config.evolutionInstance) {
-        console.log('⏭️  [CRON] Evolution API no configurada, saltando...');
+    if (!config.ycloudApiKey || !config.ycloudWhatsAppNumber) {
+        console.log('⏭️  [CRON] YCloud API no configurada, saltando...');
         return;
     }
 
@@ -281,15 +325,23 @@ async function envioAutomatico() {
         // Usar el día de vencimiento individual del alumno
         const diaVenc = a.diaVencimiento ?? DIA_VENCIMIENTO_DEFAULT;
 
-        let msg = buildMessage(template, {
-            nombre: a.nombre,
-            monto: formatCurrency(a.cuota),
-            mes: MONTHS[mes - 1],
-            plan: a.plan === 'libre' ? 'Libre' : '3 Veces por Semana',
-            fecha: `${diaVenc} de ${MONTHS[mes - 1]}`
-        });
+        const templateName = esPrimerEnvio ? 'disponible' : 'recordatorio';
+        const params = esPrimerEnvio
+            ? [
+                a.nombre,
+                MONTHS[mes - 1],
+                formatCurrency(a.cuota),
+                a.plan === 'libre' ? 'Libre' : '3 Veces por Semana',
+                `${diaVenc} de ${MONTHS[mes - 1]}`
+              ]
+            : [
+                a.nombre,
+                MONTHS[mes - 1],
+                formatCurrency(a.cuota),
+                a.plan === 'libre' ? 'Libre' : '3 Veces por Semana'
+              ];
 
-        const res = await sendWhatsApp(config.evolutionApiUrl, config.evolutionApiKey, config.evolutionInstance, a.whatsapp, msg);
+        const res = await sendYCloudTemplate(config.ycloudApiKey, config.ycloudWhatsAppNumber, a.whatsapp, templateName, params);
 
         if (res.success) {
             sent++;
@@ -366,7 +418,32 @@ app.put('/api/data', authMiddleware, async (req, res) => {
 // POST alumno
 app.post('/api/alumnos', authMiddleware, async (req, res) => {
     try {
-        const alumno = await crearAlumno(req.body);
+        const { nombre, whatsapp, plan, cuota, diaVencimiento, estado, notas } = req.body;
+        
+        if (!nombre || typeof nombre !== 'string' || nombre.trim().length === 0) {
+            return res.status(400).json({ error: 'Nombre inválido' });
+        }
+        if (!whatsapp || typeof whatsapp !== 'string') {
+            return res.status(400).json({ error: 'WhatsApp inválido' });
+        }
+        if (plan !== 'libre' && plan !== '3x') {
+            return res.status(400).json({ error: 'Plan inválido' });
+        }
+        if (typeof cuota !== 'number' || cuota < 0) {
+            return res.status(400).json({ error: 'Cuota inválida' });
+        }
+
+        const sanitizedAlumno = {
+            nombre: sanitizeString(nombre),
+            whatsapp: sanitizeString(whatsapp),
+            plan: plan as Alumno['plan'],
+            cuota,
+            diaVencimiento: typeof diaVencimiento === 'number' ? diaVencimiento : 5,
+            estado: sanitizeString(estado || 'activo') as Alumno['estado'],
+            notas: notas ? sanitizeString(notas) : undefined
+        };
+
+        const alumno = await crearAlumno(sanitizedAlumno);
         res.json({ ok: true, alumno });
     } catch (error) {
         console.error('Error creando alumno:', error);
@@ -389,7 +466,38 @@ app.post('/api/alumnos/import', authMiddleware, async (req, res) => {
 // PUT alumno (update individual fields like estado)
 app.put('/api/alumnos/:id', authMiddleware, async (req, res) => {
     try {
-        const ok = await actualizarAlumno(req.params.id as string, req.body);
+        const id = sanitizeString(req.params.id as string);
+        const data = req.body;
+        
+        const updateData: Record<string, any> = {};
+        if (data.nombre !== undefined) updateData.nombre = sanitizeString(data.nombre);
+        if (data.whatsapp !== undefined) updateData.whatsapp = sanitizeString(data.whatsapp);
+        if (data.plan !== undefined) {
+            if (data.plan !== 'libre' && data.plan !== '3x') {
+                return res.status(400).json({ error: 'Plan inválido' });
+            }
+            updateData.plan = data.plan;
+        }
+        if (data.cuota !== undefined) {
+            if (typeof data.cuota !== 'number' || data.cuota < 0) {
+                return res.status(400).json({ error: 'Cuota inválida' });
+            }
+            updateData.cuota = data.cuota;
+        }
+        if (data.diaVencimiento !== undefined) {
+            if (typeof data.diaVencimiento !== 'number') {
+                return res.status(400).json({ error: 'Día de vencimiento inválido' });
+            }
+            updateData.diaVencimiento = data.diaVencimiento;
+        }
+        if (data.estado !== undefined) {
+            updateData.estado = sanitizeString(data.estado);
+        }
+        if (data.notas !== undefined) {
+            updateData.notas = data.notas ? sanitizeString(data.notas) : null;
+        }
+
+        const ok = await actualizarAlumno(id, updateData);
         if (ok) {
             res.json({ ok: true });
         } else {
@@ -551,8 +659,8 @@ app.post('/api/recordatorios/send-manual', authMiddleware, async (req, res) => {
             try {
                 const config = await obtenerConfig();
                 
-                if (!config.evolutionApiUrl || !config.evolutionApiKey || !config.evolutionInstance) {
-                    console.error('❌ [MANUAL BACKGROUND] Evolution API no configurada en el servidor');
+                if (!config.ycloudApiKey || !config.ycloudWhatsAppNumber) {
+                    console.error('❌ [MANUAL BACKGROUND] YCloud API no configurada en el servidor');
                     statusEnvioManual.enProgreso = false;
                     return;
                 }
@@ -603,25 +711,34 @@ app.post('/api/recordatorios/send-manual', authMiddleware, async (req, res) => {
                         continue;
                     }
                     
-                    // Construir mensaje personalizado
-                    const msg = buildMessage(template, {
-                        nombre: a.nombre,
-                        monto: formatCurrency(a.cuota),
-                        mes: MONTHS[mes - 1],
-                        plan: a.plan === 'libre' ? 'Libre' : '3 Veces por Semana',
-                        datos_pago: config.datosPago || '',
-                    });
+                    // Construir parámetros de plantilla personalizados
+                    const templateName = template === 'disponible' ? 'disponible' : 'recordatorio';
+                    const diaVenc = a.diaVencimiento ?? DIA_VENCIMIENTO_DEFAULT;
+                    const params = templateName === 'disponible'
+                        ? [
+                            a.nombre,
+                            MONTHS[mes - 1],
+                            formatCurrency(a.cuota),
+                            a.plan === 'libre' ? 'Libre' : '3 Veces por Semana',
+                            `${diaVenc} de ${MONTHS[mes - 1]}`
+                          ]
+                        : [
+                            a.nombre,
+                            MONTHS[mes - 1],
+                            formatCurrency(a.cuota),
+                            a.plan === 'libre' ? 'Libre' : '3 Veces por Semana'
+                          ];
                     
                     mensajesIntentados++;
-                    console.log(`  📤 [MANUAL BACKGROUND] Enviando mensaje a ${a.nombre} (+${a.whatsapp})...`);
-                    const resSend = await sendWhatsApp(config.evolutionApiUrl, config.evolutionApiKey, config.evolutionInstance, a.whatsapp, msg);
+                    console.log(`  📤 [MANUAL BACKGROUND] Enviando plantilla ${templateName} a ${a.nombre}...`);
+                    const resSend = await sendYCloudTemplate(config.ycloudApiKey, config.ycloudWhatsAppNumber, a.whatsapp, templateName, params);
                     
                     if (resSend.success) {
                         statusEnvioManual.enviados++;
                         statusEnvioManual.resultados[alumnoId] = 'sent';
                         // Registrar en la BD
                         await registrarRecordatorioEnviado(a.id, mes, anio, 'manual');
-                        console.log(`  ✅ [MANUAL BACKGROUND] Mensaje enviado a ${a.nombre}`);
+                        console.log(`  ✅ [MANUAL BACKGROUND] Plantilla enviada a ${a.nombre}`);
                     } else {
                         statusEnvioManual.fallidos++;
                         statusEnvioManual.resultados[alumnoId] = 'error';
@@ -686,40 +803,28 @@ app.post('/api/cron/trigger', authMiddleware, async (_req, res) => {
     res.json({ ok: true });
 });
 
-// ─── Evolution API Proxy (evita CORS) ────────────────────────
+// ─── YCloud API Proxy (evita CORS) ────────────────────────
 // POST test connection
 app.post('/api/whatsapp/test', authMiddleware, async (req, res) => {
-    const { apiUrl, apiKey, instance } = req.body;
-
-    // Limpiar URL (quitar /manager si existe)
-    const cleanUrl = apiUrl.replace(/\/manager\/?$/, '').replace(/\/$/, '');
-    const testUrl = `${cleanUrl}/instance/connectionState/${instance}`;
-
-    console.log(`🔍 [WhatsApp Test] URL: ${testUrl}`);
+    const { apiKey } = req.body;
 
     // Resolver API key si es enmascarada
     let realApiKey = apiKey;
     if (apiKey === '••••••••') {
         const config = await obtenerConfig();
-        realApiKey = config.evolutionApiKey;
+        realApiKey = config.ycloudApiKey;
     }
 
     try {
-        const response = await fetch(testUrl, {
-            headers: { apikey: realApiKey },
+        const response = await fetch('https://api.ycloud.com/v2/balance', {
+            headers: { 'X-API-Key': realApiKey },
         });
 
-        const text = await response.text();
-        console.log(`🔍 [WhatsApp Test] Response: ${response.status} - ${text.substring(0, 200)}`);
-
         if (response.ok) {
-            try {
-                const data = JSON.parse(text);
-                res.json({ connected: true, state: data.instance?.state || data.state || 'ok' });
-            } catch {
-                res.json({ connected: false, error: 'Respuesta no es JSON válido' });
-            }
+            const data = await response.json();
+            res.json({ connected: true, balance: data.amount || 'ok' });
         } else {
+            const text = await response.text();
             res.json({ connected: false, error: `HTTP ${response.status}: ${text.substring(0, 100)}` });
         }
     } catch (e: any) {
@@ -728,42 +833,27 @@ app.post('/api/whatsapp/test', authMiddleware, async (req, res) => {
     }
 });
 
-// POST send whatsapp message
-app.post('/api/whatsapp/send', authMiddleware, async (req, res) => {
-    const { apiUrl, apiKey, instance, number, text } = req.body;
-
-    // Limpiar URL (quitar /manager si existe)
-    const cleanUrl = apiUrl.replace(/\/manager\/?$/, '').replace(/\/$/, '');
-    const sendUrl = `${cleanUrl}/message/sendText/${instance}`;
-
-    console.log(`📤 [WhatsApp Send] URL: ${sendUrl}`);
-    console.log(`📤 [WhatsApp Send] To: ${number}`);
-
-    // Resolver API key si es enmascarada
-    let realApiKey = apiKey;
-    if (apiKey === '••••••••') {
-        const config = await obtenerConfig();
-        realApiKey = config.evolutionApiKey;
+// POST send ycloud template
+app.post('/api/whatsapp/send-template', authMiddleware, async (req, res) => {
+    const { to, template, vars } = req.body;
+    
+    if (!to || !template || !Array.isArray(vars)) {
+        return res.status(400).json({ error: 'Parámetros inválidos' });
     }
 
-    try {
-        const response = await fetch(sendUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', apikey: realApiKey },
-            body: JSON.stringify({ number, text }),
-        });
+    const config = await obtenerConfig();
+    if (!config.ycloudApiKey || !config.ycloudWhatsAppNumber) {
+        return res.status(400).json({ error: 'YCloud no configurado en el servidor' });
+    }
 
-        const responseText = await response.text();
-        console.log(`📤 [WhatsApp Send] Response: ${response.status} - ${responseText.substring(0, 200)}`);
+    // Sanitizar variables antes de enviar
+    const sanitizedVars = vars.map(v => sanitizeString(String(v)));
 
-        if (response.ok) {
-            res.json({ success: true });
-        } else {
-            res.json({ success: false, error: `HTTP ${response.status}: ${responseText.substring(0, 100)}` });
-        }
-    } catch (e: any) {
-        console.error(`❌ [WhatsApp Send] Error:`, e.message);
-        res.json({ success: false, error: e.message });
+    const resSend = await sendYCloudTemplate(config.ycloudApiKey, config.ycloudWhatsAppNumber, to, template, sanitizedVars);
+    if (resSend.success) {
+        res.json({ success: true });
+    } else {
+        res.status(500).json({ success: false, error: resSend.error });
     }
 });
 
@@ -773,7 +863,7 @@ app.delete('/api/data', authMiddleware, (_req, res) => {
         alumnos: [], pagos: [], activity: [], mensajesEnviados: 0,
         enviosRealizados: [],
         config: {
-            evolutionApiUrl: '', evolutionApiKey: '', evolutionInstance: '',
+            ycloudApiKey: '', ycloudWhatsAppNumber: '',
             diaEnvio: 5, mensajePlantilla: '', datosPago: '',
         },
     });
@@ -782,7 +872,7 @@ app.delete('/api/data', authMiddleware, (_req, res) => {
 
 // ─── Servir frontend en producción ──────────────────────────
 if (process.env.NODE_ENV === 'production') {
-    const distPath = path.join(__dirname, '..', 'dist');
+    const distPath = path.join(__dirname, '..', 'frontend', 'dist');
     app.use(express.static(distPath));
     // Express 5 requiere sintaxis diferente para catch-all
     app.get('/{*path}', (_req, res) => {

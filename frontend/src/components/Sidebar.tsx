@@ -35,23 +35,23 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
 
                 <nav className="sidebar-nav">
                     <span className="nav-section-label">Principal</span>
-                    <NavLink to="/" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} onClick={onClose}>
+                    <NavLink to="/" className={({ isActive }: { isActive: boolean }) => `nav-link ${isActive ? 'active' : ''}`} onClick={onClose}>
                         <span className="nav-icon">📊</span> Dashboard
                     </NavLink>
 
                     <span className="nav-section-label">Gestión</span>
-                    <NavLink to="/registrar" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} onClick={onClose}>
+                    <NavLink to="/registrar" className={({ isActive }: { isActive: boolean }) => `nav-link ${isActive ? 'active' : ''}`} onClick={onClose}>
                         <span className="nav-icon">🥋</span> Registrar Alumno
                     </NavLink>
-                    <NavLink to="/cobrar" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} onClick={onClose}>
+                    <NavLink to="/cobrar" className={({ isActive }: { isActive: boolean }) => `nav-link ${isActive ? 'active' : ''}`} onClick={onClose}>
                         <span className="nav-icon">💳</span> Cobrar Cuota
                     </NavLink>
-                    <NavLink to="/recordatorios" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} onClick={onClose}>
+                    <NavLink to="/recordatorios" className={({ isActive }: { isActive: boolean }) => `nav-link ${isActive ? 'active' : ''}`} onClick={onClose}>
                         <span className="nav-icon">🔔</span> Recordatorios
                     </NavLink>
 
                     <span className="nav-section-label">Sistema</span>
-                    <NavLink to="/configuracion" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} onClick={onClose}>
+                    <NavLink to="/configuracion" className={({ isActive }: { isActive: boolean }) => `nav-link ${isActive ? 'active' : ''}`} onClick={onClose}>
                         <span className="nav-icon">⚙️</span> Configuración
                     </NavLink>
                 </nav>

@@ -161,9 +161,8 @@ export const useStore = create<StoreState>()(
             alumnos: [],
             pagos: [],
             config: {
-                evolutionApiUrl: '',
-                evolutionApiKey: '',
-                evolutionInstance: '',
+                ycloudApiKey: '',
+                ycloudWhatsAppNumber: '',
                 diaEnvio: 5,
                 mensajePlantilla: DEFAULT_PLANTILLA,
                 datosPago: '',

@@ -1,0 +1,26 @@
+{
+  "admins": [
+    {
+      "id": "mnthdua2ejf8hdzq1",
+      "email": "grisjaa@gmail.com",
+      "password": "$2b$10$Um0.mMwCFRE2FC9PecucW.6b/SIUQo/6WUQ8ubmSAmM77wdxnX082",
+      "nombre": "Jorge Altamirano",
+      "emailVerificado": true,
+      "tokenVerificacion": null,
+      "tokenExpiracion": null,
+      "creadoEn": "2026-04-10T22:32:02.186Z",
+      "actualizadoEn": "2026-04-10T22:32:37.211Z"
+    },
+    {
+      "id": "mnubbvj0zy2m5yme0",
+      "email": "info@precisohys.com",
+      "password": "$2b$10$JJ4GsIbMAqYt6ylSO5hmuOF4yQuaNBrHLn6LrtbZo/eQlYikUV/yq",
+      "nombre": "Jorge Altamirano",
+      "emailVerificado": true,
+      "tokenVerificacion": null,
+      "tokenExpiracion": null,
+      "creadoEn": "2026-04-11T12:30:18.972Z",
+      "actualizadoEn": "2026-04-11T12:30:49.959Z"
+    }
+  ]
+}

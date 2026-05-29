@@ -3,7 +3,7 @@ import { useStore } from '../store/useStore';
 import PlanSelector from '../components/PlanSelector';
 import MonthGrid from '../components/MonthGrid';
 import { showToast } from '../components/Toast';
-import { formatWhatsApp, formatCurrency, sendWhatsApp } from '../services/evolution';
+import { formatWhatsApp, formatCurrency, sendWhatsAppTemplate, sanitizeInput } from '../services/ycloud';
 import { parseExcelFile } from '../services/spreadsheet';
 import type { Alumno, EstadoAlumno } from '../types';
 import { ESTADO_LABELS } from '../types';
@@ -42,17 +42,23 @@ export default function RegistrarAlumno() {
         e.preventDefault();
         setLoading(true);
 
+        const sanitizedNombre = sanitizeInput(nombre);
+        const sanitizedEmail = email ? sanitizeInput(email) : '';
+        const sanitizedNotas = notas ? sanitizeInput(notas) : '';
         const formatted = formatWhatsApp(whatsapp);
+        const cuotaVal = parseInt(cuota) || 0;
+
         addAlumno({
-            nombre, whatsapp: formatted, email, plan, cuota: parseInt(cuota) || 0,
-            nivel, notas, diaVencimiento, estado,
+            nombre: sanitizedNombre, whatsapp: formatted, email: sanitizedEmail, plan, cuota: cuotaVal,
+            nivel, notas: sanitizedNotas, diaVencimiento, estado,
         });
 
-        addActivity('sent', `Alumno registrado: ${nombre} (${plan === 'libre' ? 'Libre' : '3x Semana'})`);
+        addActivity('sent', `Alumno registrado: ${sanitizedNombre} (${plan === 'libre' ? 'Libre' : '3x Semana'})`);
 
-        if (config.evolutionApiUrl && config.evolutionApiKey && config.evolutionInstance) {
-            const msg = `¡Hola ${nombre}! 🥋👊\n\nBienvenido/a a *Mutantes Fight Team*!\n\n📋 Plan: *${plan === 'libre' ? 'Libre' : '3 Veces por Semana'}*\n💰 Cuota: *${formatCurrency(parseInt(cuota))}*\n\n¡Nos vemos en el tatami! 💪🔥\n\n_Mutantes Fight Team - BJJ_`;
-            const res = await sendWhatsApp(config.evolutionApiUrl, config.evolutionApiKey, config.evolutionInstance, formatted, msg);
+        if (config.ycloudApiKey && config.ycloudWhatsAppNumber) {
+            const planText = plan === 'libre' ? 'Libre' : '3 Veces por Semana';
+            const cuotaText = formatCurrency(cuotaVal);
+            const res = await sendWhatsAppTemplate(formatted, 'bienvenida', [sanitizedNombre, planText, cuotaText]);
             if (res.success) {
                 showToast('✅ Alumno registrado y bienvenida enviada', 'success');
                 incrementMensajes();

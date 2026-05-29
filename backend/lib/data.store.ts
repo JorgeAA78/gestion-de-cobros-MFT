@@ -44,9 +44,8 @@ export interface Activity {
 }
 
 export interface Config {
-    evolutionApiUrl: string;
-    evolutionApiKey: string;
-    evolutionInstance: string;
+    ycloudApiKey: string;
+    ycloudWhatsAppNumber: string;
     diaEnvio: number;
     mensajePlantilla: string;
     datosPago: string;
@@ -108,7 +107,7 @@ function readDataJSON(): DataStore {
             alumnos: [], pagos: [], activity: [], mensajesEnviados: 0,
             enviosRealizados: [],
             config: {
-                evolutionApiUrl: '', evolutionApiKey: '', evolutionInstance: '',
+                ycloudApiKey: '', ycloudWhatsAppNumber: '',
                 diaEnvio: 5, mensajePlantilla: '', datosPago: '',
             },
         };
@@ -395,6 +394,9 @@ export async function agregarActividad(activity: Activity): Promise<void> {
 
 // ─── Funciones de Configuración ─────────────────────────────────────────────
 export async function obtenerConfig(): Promise<Config> {
+    const envApiKey = process.env.YCLOUD_API_KEY || '';
+    const envWhatsAppNumber = process.env.YCLOUD_WHATSAPP_NUMBER || '';
+
     if (isSupabaseConfigured() && supabase) {
         const { data, error } = await supabase
             .from('configuracion')
@@ -402,31 +404,43 @@ export async function obtenerConfig(): Promise<Config> {
         
         if (error || !data || data.length === 0) {
             return {
-                evolutionApiUrl: '', evolutionApiKey: '', evolutionInstance: '',
+                ycloudApiKey: envApiKey,
+                ycloudWhatsAppNumber: envWhatsAppNumber,
                 diaEnvio: 5, mensajePlantilla: '', datosPago: '',
             };
         }
         
         const config: Config = {
-            evolutionApiUrl: '', evolutionApiKey: '', evolutionInstance: '',
+            ycloudApiKey: envApiKey,
+            ycloudWhatsAppNumber: envWhatsAppNumber,
             diaEnvio: 5, mensajePlantilla: '', datosPago: '',
         };
         
         for (const row of data) {
             if (row.clave in config) {
+                // If it is in environment variables, prioritize them
+                if (row.clave === 'ycloudApiKey' && envApiKey) continue;
+                if (row.clave === 'ycloudWhatsAppNumber' && envWhatsAppNumber) continue;
+
                 (config as any)[row.clave] = row.clave === 'diaEnvio' ? parseInt(row.valor) : row.valor;
             }
         }
         return config;
     }
-    return readDataJSON().config;
+    
+    const localConfig = readDataJSON().config;
+    return {
+        ...localConfig,
+        ycloudApiKey: envApiKey || localConfig.ycloudApiKey || '',
+        ycloudWhatsAppNumber: envWhatsAppNumber || localConfig.ycloudWhatsAppNumber || '',
+    };
 }
 
 export async function guardarConfig(config: Config): Promise<void> {
     const currentConfig = await obtenerConfig();
     const finalConfig = { ...config };
-    if (finalConfig.evolutionApiKey === '••••••••') {
-        finalConfig.evolutionApiKey = currentConfig.evolutionApiKey;
+    if (finalConfig.ycloudApiKey === '••••••••') {
+        finalConfig.ycloudApiKey = currentConfig.ycloudApiKey;
     }
 
     if (isSupabaseConfigured() && supabase) {
@@ -568,7 +582,7 @@ export async function obtenerTodo(): Promise<any> {
         
         const maskedConfig = {
             ...config,
-            evolutionApiKey: config.evolutionApiKey ? '••••••••' : ''
+            ycloudApiKey: config.ycloudApiKey ? '••••••••' : ''
         };
         
         return {
@@ -583,7 +597,11 @@ export async function obtenerTodo(): Promise<any> {
     }
     const data = readDataJSON();
     if (data.config) {
-        data.config.evolutionApiKey = data.config.evolutionApiKey ? '••••••••' : '';
+        const envApiKey = process.env.YCLOUD_API_KEY || '';
+        const envWhatsAppNumber = process.env.YCLOUD_WHATSAPP_NUMBER || '';
+        data.config.ycloudApiKey = envApiKey || data.config.ycloudApiKey || '';
+        data.config.ycloudWhatsAppNumber = envWhatsAppNumber || data.config.ycloudWhatsAppNumber || '';
+        data.config.ycloudApiKey = data.config.ycloudApiKey ? '••••••••' : '';
     }
     const recordatoriosEnviados: RecordatoriosMap = {};
     for (const r of data.enviosRealizados || []) {

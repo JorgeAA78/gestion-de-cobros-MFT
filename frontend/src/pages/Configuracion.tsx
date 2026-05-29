@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useStore } from '../store/useStore';
 import { useAuthStore } from '../store/authStore';
 import { showToast } from '../components/Toast';
-import { testConnection, sendWhatsApp, formatWhatsApp } from '../services/evolution';
+import { testConnection, sendWhatsAppTemplate, sanitizeInput, formatWhatsApp } from '../services/ycloud';
 import { generarInvitacion, listarInvitaciones, eliminarInvitacion } from '../services/auth.service';
 
 interface Invitacion {
@@ -21,9 +21,8 @@ export default function Configuracion() {
     const addActivity = useStore((s) => s.addActivity);
     const token = useAuthStore((s) => s.token);
 
-    const [url, setUrl] = useState(config.evolutionApiUrl);
-    const [key, setKey] = useState(config.evolutionApiKey);
-    const [instance, setInstance] = useState(config.evolutionInstance);
+    const [key, setKey] = useState(config.ycloudApiKey);
+    const [whatsappNumber, setWhatsappNumber] = useState(config.ycloudWhatsAppNumber);
     const [dia, setDia] = useState(config.diaEnvio);
     const [datosPago, setDatosPago] = useState(config.datosPago);
     const [showTest, setShowTest] = useState(false);
@@ -90,21 +89,20 @@ export default function Configuracion() {
 
     const save = () => {
         updateConfig({
-            evolutionApiUrl: url.replace(/\/$/, ''),
-            evolutionApiKey: key,
-            evolutionInstance: instance,
+            ycloudApiKey: sanitizeInput(key),
+            ycloudWhatsAppNumber: sanitizeInput(whatsappNumber),
             diaEnvio: dia,
-            datosPago,
+            datosPago: sanitizeInput(datosPago),
         });
         showToast('✅ Configuración guardada', 'success');
         addActivity('sent', 'Configuración actualizada');
     };
 
     const test = async () => {
-        if (!url || !key || !instance) { showToast('Completá todos los campos', 'warning'); return; }
+        if (!key) { showToast('Completá la API Key', 'warning'); return; }
         showToast('🔄 Probando conexión...', 'info');
-        const res = await testConnection(url.replace(/\/$/, ''), key, instance);
-        if (res.connected) showToast(`✅ Conectado! Estado: ${res.state}`, 'success');
+        const res = await testConnection(key);
+        if (res.connected) showToast(`✅ Conectado! Balance: ${res.balance || 'OK'}`, 'success');
         else showToast(`❌ Error: ${res.error}`, 'error');
     };
 
@@ -112,9 +110,8 @@ export default function Configuracion() {
         const num = formatWhatsApp(testNum);
         if (!num || num.length < 10) { showToast('Número inválido', 'warning'); return; }
         save();
-        const msg = `*Mensaje de Prueba*\n\nSistema de cobros Mutantes Fight Team funcionando correctamente. 💪\n\n_Mutantes Fight Team - BJJ_`;
-        const res = await sendWhatsApp(url.replace(/\/$/, ''), key, instance, num, msg);
-        if (res.success) showToast('✅ Mensaje enviado!', 'success');
+        const res = await sendWhatsAppTemplate(num, 'bienvenida', ['Alumno Prueba', 'Plan Libre', '$25.000']);
+        if (res.success) showToast('✅ Mensaje de prueba enviado!', 'success');
         else showToast(`❌ ${res.error}`, 'error');
     };
 
@@ -129,35 +126,31 @@ export default function Configuracion() {
         <>
             <div className="page-header">
                 <h1>⚙️ <span className="header-accent">Configuración</span></h1>
-                <p>Evolution API y parámetros del sistema</p>
+                <p>YCloud WhatsApp Business API y parámetros del sistema</p>
             </div>
 
             <div className="form-container" style={{ maxWidth: 800 }}>
-                {/* Evolution API */}
+                {/* YCloud WhatsApp Business API */}
                 <div className="card">
-                    <h3 className="section-title">📱 Evolution API</h3>
+                    <h3 className="section-title">📱 YCloud WhatsApp API</h3>
                     <p style={{ color: 'rgba(134,239,172,0.4)', fontSize: '0.9rem', marginBottom: 'var(--space-lg)' }}>
-                        Conectá tu instancia para enviar WhatsApp directo, sin n8n ni intermediarios.
+                        Conectá tu cuenta de YCloud para enviar WhatsApp Business de forma oficial a través de plantillas aprobadas.
                     </p>
 
                     <div className="form-group">
-                        <label>URL de Evolution API <span className="required">*</span></label>
-                        <input type="url" className="form-input" value={url} onChange={(e) => setUrl(e.target.value)}
-                            placeholder="https://tu-evolution-api.com" />
-                    </div>
-
-                    <div className="form-group">
-                        <label>API Key <span className="required">*</span></label>
+                        <label>YCloud API Key <span className="required">*</span></label>
                         <div className="input-group">
                             <span className="input-prefix">🔑</span>
-                            <input type="password" className="form-input" value={key} onChange={(e) => setKey(e.target.value)} />
+                            <input type="password" className="form-input" value={key} onChange={(e) => setKey(e.target.value)}
+                                placeholder="Ingresá tu API Key de YCloud" />
                         </div>
                     </div>
 
                     <div className="form-group">
-                        <label>Instancia <span className="required">*</span></label>
-                        <input type="text" className="form-input" value={instance} onChange={(e) => setInstance(e.target.value)}
-                            placeholder="mutantes-bjj" />
+                        <label>Número de WhatsApp Remitente <span className="required">*</span></label>
+                        <input type="text" className="form-input" value={whatsappNumber} onChange={(e) => setWhatsappNumber(e.target.value)}
+                            placeholder="Ej: +5491122334455" />
+                        <p className="form-hint">Tu número conectado a WABA/YCloud en formato internacional E.164 (debe comenzar con +)</p>
                     </div>
 
                     <div style={{ display: 'flex', gap: 'var(--space-md)' }}>
@@ -220,7 +213,7 @@ export default function Configuracion() {
   🖥️  React + TypeScript
        │
        ▼
-  📱 Evolution API ──► 💬 WhatsApp
+  📱 YCloud API ────────► 💬 WhatsApp
        │                    │
        ▼                    ▼
   ✅ Estado              📲 Alumno recibe

@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { registrarAdmin, validarCodigoInvitacion } from '../services/auth.service';
+import { sanitizeInput } from '../services/ycloud';
 
 export default function Registro() {
     const navigate = useNavigate();
@@ -77,10 +78,10 @@ export default function Registro() {
 
         try {
             const response = await registrarAdmin({
-                nombre: formData.nombre,
-                email: formData.email,
-                password: formData.password,
-                codigoInvitacion: formData.codigoInvitacion,
+                nombre: sanitizeInput(formData.nombre),
+                email: sanitizeInput(formData.email),
+                password: sanitizeInput(formData.password),
+                codigoInvitacion: sanitizeInput(formData.codigoInvitacion),
             });
 
             if (response.error) {

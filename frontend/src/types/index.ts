@@ -35,9 +35,8 @@ export interface PagoMensual {
 }
 
 export interface AppConfig {
-    evolutionApiUrl: string;
-    evolutionApiKey: string;
-    evolutionInstance: string;
+    ycloudApiKey: string;
+    ycloudWhatsAppNumber: string;
     diaEnvio: number;
     mensajePlantilla: string;
     datosPago: string;

@@ -2,7 +2,12 @@ import { useState, useMemo, useEffect } from 'react';
 import { useStore } from '../store/useStore';
 import { MONTH_NAMES } from '../types';
 import { showToast } from '../components/Toast';
-import { formatCurrency, buildMessage } from '../services/evolution';
+import { formatCurrency, buildMessage } from '../services/ycloud';
+
+const PREVIEW_TEMPLATES: Record<string, string> = {
+    disponible: `¡Hola {nombre}! 👋 \n\nTe recordamos que la cuota de {mes} ya está disponible para abonar:\n\n💰 Monto: {monto}\n📋 Plan: {plan}\n📅 Fecha límite: {fecha}\n\nAlias: mutantesbjj\na nombre de: Pablo Sebastian Echazu Bloser\n\nPor favor, enviar comprobante al realizar el pago\n\n¡Te esperamos en el tatami! 💪\n\nMutantes Fight Team - BJJ`,
+    recordatorio: `¡Hola {nombre}! 👋 \n\nTe recordamos que la cuota de {mes} está pendiente:\n\n💰 Monto: {monto}\n📋 Plan: {plan}\n\nAlias: mutantesbjj\na nombre de: Pablo Sebastian Echazu Bloser\n\nPor favor, enviar comprobante al realizar el pago\n\n¡Te esperamos en el tatami! 💪 \n\nMutantes Fight Team - BJJ`,
+};
 
 export default function Recordatorios() {
     const alumnos = useStore((s) => s.alumnos);
@@ -24,8 +29,7 @@ export default function Recordatorios() {
     const MAX_LOTE = 20;
 
     const [mes, setMes] = useState(mesCurrent);
-    const [template, setTemplate] = useState(config.mensajePlantilla || `¡Hola {nombre}! 👋 \n\nTe recordamos que la cuota de *{mes}* está pendiente:\n\n💰 Monto: *{monto}*\n📋 Plan: *{plan}*\n\nAlias: *mutantesbjj*
-a nombre de: Pablo Sebastian Echazu Bloser\n\n*Por favor, enviar comprobante al realizar el pago*\n\n¡Te esperamos en el tatami! 💪 \n\n_Mutantes Fight Team - BJJ_`);
+    const [plantilla, setPlantilla] = useState<'disponible' | 'recordatorio'>('disponible');
 
     const sending = Boolean(statusManual?.enProgreso);
 
@@ -73,13 +77,13 @@ a nombre de: Pablo Sebastian Echazu Bloser\n\n*Por favor, enviar comprobante al 
             return;
         }
 
-        if (!config.evolutionApiUrl || !config.evolutionApiKey || !config.evolutionInstance) {
-            showToast('⚙️ Configurá Evolution API primero', 'warning');
+        if (!config.ycloudApiKey || !config.ycloudWhatsAppNumber) {
+            showToast('⚙️ Configurá YCloud primero', 'warning');
             return;
         }
 
         const ids = paraEnviar.map((a) => a.id);
-        const res = await iniciarEnvioManual(ids, template, mes, anio);
+        const res = await iniciarEnvioManual(ids, plantilla, mes, anio);
         
         if (res.success) {
             showToast('🚀 Envío de recordatorios iniciado en segundo plano. Podés navegar libremente por el sistema.', 'success');
@@ -96,12 +100,12 @@ a nombre de: Pablo Sebastian Echazu Bloser\n\n*Por favor, enviar comprobante al 
     };
 
     const sampleMsg = pendientes.length > 0
-        ? buildMessage(template, {
+        ? buildMessage(PREVIEW_TEMPLATES[plantilla], {
             nombre: pendientes[0].nombre,
             monto: formatCurrency(pendientes[0].cuota),
             mes: MONTH_NAMES[mes - 1],
             plan: pendientes[0].plan === 'libre' ? 'Libre' : '3 Veces por Semana',
-            datos_pago: config.datosPago || '',
+            fecha: `${pendientes[0].diaVencimiento ?? 10} de ${MONTH_NAMES[mes - 1]}`,
         })
         : '';
 
@@ -176,10 +180,13 @@ a nombre de: Pablo Sebastian Echazu Bloser\n\n*Por favor, enviar comprobante al 
 
                 {/* Template */}
                 <div className="card mt-2">
-                    <h3 className="section-title">💬 Mensaje de Recordatorio</h3>
+                    <h3 className="section-title">💬 Plantilla de Recordatorio</h3>
                     <div className="form-group">
-                        <textarea className="form-textarea" value={template} onChange={(e) => setTemplate(e.target.value)} rows={8} disabled={sending} />
-                        <p className="form-hint">Variables: {'{nombre}'}, {'{monto}'}, {'{mes}'}, {'{plan}'}, {'{datos_pago}'}</p>
+                        <label>Seleccionar Plantilla</label>
+                        <select className="form-select" value={plantilla} onChange={(e) => setPlantilla(e.target.value as 'disponible' | 'recordatorio')} disabled={sending}>
+                            <option value="disponible">📅 Aviso de Cuota Disponible (disponible)</option>
+                            <option value="recordatorio">💰 Recordatorio de Pago Pendiente (recordatorio)</option>
+                        </select>
                     </div>
 
                     {sampleMsg && (

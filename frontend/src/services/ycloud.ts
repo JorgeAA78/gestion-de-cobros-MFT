@@ -10,19 +10,23 @@ async function getAuthHeaders() {
     };
 }
 
-export async function sendWhatsApp(
-    apiUrl: string,
-    apiKey: string,
-    instance: string,
-    number: string,
-    text: string
+// Sanitizar entradas para evitar XSS en el frontend
+export function sanitizeInput(str: string): string {
+    if (typeof str !== 'string') return '';
+    return str.replace(/<[^>]*>/g, '').trim();
+}
+
+export async function sendWhatsAppTemplate(
+    to: string,
+    template: 'bienvenida' | 'disponible' | 'recordatorio',
+    vars: string[]
 ): Promise<{ success: boolean; error?: string }> {
     try {
         const headers = await getAuthHeaders();
-        const res = await fetch(`${API_BASE}/whatsapp/send`, {
+        const res = await fetch(`${API_BASE}/whatsapp/send-template`, {
             method: 'POST',
             headers,
-            body: JSON.stringify({ apiUrl, apiKey, instance, number, text }),
+            body: JSON.stringify({ to, template, vars }),
         });
         return await res.json();
     } catch (e: any) {
@@ -31,16 +35,14 @@ export async function sendWhatsApp(
 }
 
 export async function testConnection(
-    apiUrl: string,
-    apiKey: string,
-    instance: string
-): Promise<{ connected: boolean; state?: string; error?: string }> {
+    apiKey: string
+): Promise<{ connected: boolean; balance?: string; error?: string }> {
     try {
         const headers = await getAuthHeaders();
         const res = await fetch(`${API_BASE}/whatsapp/test`, {
             method: 'POST',
             headers,
-            body: JSON.stringify({ apiUrl, apiKey, instance }),
+            body: JSON.stringify({ apiKey }),
         });
         return await res.json();
     } catch (e: any) {

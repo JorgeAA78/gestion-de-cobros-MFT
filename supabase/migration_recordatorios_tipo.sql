@@ -24,7 +24,7 @@ ALTER TABLE recordatorios_enviados ENABLE ROW LEVEL SECURITY;
 
 -- Re-crear política para acceso total del Backend (service_role)
 DROP POLICY IF EXISTS "Service role full access recordatorios" ON recordatorios_enviados;
-CREATE POLICY "Service role full access recordatorios" ON recordatorios_enviados FOR ALL USING (true);
+CREATE POLICY "Service role full access recordatorios" ON recordatorios_enviados FOR ALL TO service_role USING (true);
 
 -- Re-crear índices de rendimiento
 CREATE INDEX IF NOT EXISTS idx_recordatorios_alumno ON recordatorios_enviados(alumno_id, mes, anio);

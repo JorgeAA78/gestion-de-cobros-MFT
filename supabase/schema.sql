@@ -113,13 +113,13 @@ ALTER TABLE configuracion ENABLE ROW LEVEL SECURITY;
 ALTER TABLE recordatorios_enviados ENABLE ROW LEVEL SECURITY;
 
 -- Políticas para service_role (backend) - acceso total
-CREATE POLICY "Service role full access admins" ON admins FOR ALL USING (true);
-CREATE POLICY "Service role full access invitaciones" ON invitaciones FOR ALL USING (true);
-CREATE POLICY "Service role full access alumnos" ON alumnos FOR ALL USING (true);
-CREATE POLICY "Service role full access pagos" ON pagos FOR ALL USING (true);
-CREATE POLICY "Service role full access actividad" ON actividad FOR ALL USING (true);
-CREATE POLICY "Service role full access configuracion" ON configuracion FOR ALL USING (true);
-CREATE POLICY "Service role full access recordatorios" ON recordatorios_enviados FOR ALL USING (true);
+CREATE POLICY "Service role full access admins" ON admins FOR ALL TO service_role USING (true);
+CREATE POLICY "Service role full access invitaciones" ON invitaciones FOR ALL TO service_role USING (true);
+CREATE POLICY "Service role full access alumnos" ON alumnos FOR ALL TO service_role USING (true);
+CREATE POLICY "Service role full access pagos" ON pagos FOR ALL TO service_role USING (true);
+CREATE POLICY "Service role full access actividad" ON actividad FOR ALL TO service_role USING (true);
+CREATE POLICY "Service role full access configuracion" ON configuracion FOR ALL TO service_role USING (true);
+CREATE POLICY "Service role full access recordatorios" ON recordatorios_enviados FOR ALL TO service_role USING (true);
 
 -- ═══════════════════════════════════════════════════════════════════════════
 -- FIN DEL SCHEMA

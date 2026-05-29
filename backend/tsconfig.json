@@ -2,15 +2,15 @@
   "compilerOptions": {
     "target": "ES2022",
     "module": "ESNext",
-    "moduleResolution": "bundler",
-    "outDir": "./dist-server",
-    "rootDir": "./server",
+    "moduleResolution": "node",
+    "outDir": "./dist",
+    "rootDir": "./",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
     "declaration": false
   },
-  "include": ["server/**/*"],
-  "exclude": ["node_modules"]
+  "include": ["index.ts", "lib/**/*", "auth/**/*"],
+  "exclude": ["node_modules", "dist"]
 }

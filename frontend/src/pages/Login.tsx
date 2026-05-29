@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { loginAdmin } from '../services/auth.service';
+import { sanitizeInput } from '../services/ycloud';
 import { useAuthStore } from '../store/authStore';
 
 export default function Login() {
@@ -26,8 +27,11 @@ export default function Login() {
         setError('');
         setLoading(true);
 
+        const sanitizedEmail = sanitizeInput(formData.email);
+        const sanitizedPassword = sanitizeInput(formData.password);
+
         try {
-            const response = await loginAdmin(formData);
+            const response = await loginAdmin({ email: sanitizedEmail, password: sanitizedPassword });
 
             if (response.error) {
                 if (response.requiereVerificacion) {
