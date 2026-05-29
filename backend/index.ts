@@ -156,6 +156,31 @@ function randomDelay(index: number) {
     return delay(sec * 1000);
 }
 
+async function randomDelayInterruptible(index: number, statusObj: { cancelRequest?: boolean }): Promise<boolean> {
+    let sec = 0;
+    if (index > 0 && index % 10 === 0) {
+        sec = Math.floor(Math.random() * (480 - 300 + 1)) + 300;
+        console.log(`  ⏸️ Pausa larga entre lotes... (${Math.round(sec/60)} min)`);
+    } else {
+        sec = Math.floor(Math.random() * (240 - 120 + 1)) + 120;
+        console.log(`  ⏳ Esperando ${sec}s antes del próximo mensaje...`);
+    }
+
+    const intervalMs = 1000;
+    const totalMs = sec * 1000;
+    let elapsedMs = 0;
+
+    while (elapsedMs < totalMs) {
+        if (statusObj.cancelRequest) {
+            console.log('🛑 [MANUAL BACKGROUND] Delay interrumpido por solicitud de cancelación.');
+            return false;
+        }
+        await new Promise((resolve) => setTimeout(resolve, intervalMs));
+        elapsedMs += intervalMs;
+    }
+    return true;
+}
+
 // ─── Cron: Envío Automático ─────────────────────────────────
 // Primer recordatorio: Días 1-5 (aviso de cuota disponible)
 // Segundo recordatorio: Días 10-14 (solo a los que no pagaron Y ya vencieron)
@@ -750,7 +775,10 @@ app.post('/api/recordatorios/send-manual', authMiddleware, async (req, res) => {
                     
                     // Retardo anti-spam únicamente si no es el último elemento y el envío no fue cancelado
                     if (i < alumnoIds.length - 1 && !statusEnvioManual.cancelRequest) {
-                        await randomDelay(mensajesIntentados);
+                        const completed = await randomDelayInterruptible(mensajesIntentados, statusEnvioManual);
+                        if (!completed) {
+                            break;
+                        }
                     }
                 }
                 
