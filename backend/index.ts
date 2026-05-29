@@ -85,12 +85,15 @@ async function sendYCloudTemplate(
         const formattedTo = toNumber.startsWith('+') ? toNumber : `+${toNumber.replace(/\D/g, '')}`;
         const formattedFrom = fromNumber.startsWith('+') ? fromNumber : `+${fromNumber.replace(/\D/g, '')}`;
         
+        const trimmedName = templateName.trim();
+        const finalTemplateName = trimmedName === 'recordatorio' ? 'recordatorio ' : trimmedName;
+
         const body = {
             from: formattedFrom,
             to: formattedTo,
             type: 'template',
             template: {
-                name: templateName.trim(),
+                name: finalTemplateName,
                 language: {
                     code: 'es'
                 },
