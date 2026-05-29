@@ -872,7 +872,7 @@ app.delete('/api/data', authMiddleware, (_req, res) => {
 
 // ─── Servir frontend en producción ──────────────────────────
 if (process.env.NODE_ENV === 'production') {
-    const distPath = path.join(__dirname, '..', 'frontend', 'dist');
+    const distPath = path.join(__dirname, '..', '..', 'frontend', 'dist');
     app.use(express.static(distPath));
     // Express 5 requiere sintaxis diferente para catch-all
     app.get('/{*path}', (_req, res) => {
