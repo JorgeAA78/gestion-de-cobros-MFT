@@ -25,7 +25,7 @@ export default function CobrarCuota() {
     const [plan, setPlan] = useState('libre');
     const [fechaLimite, setFechaLimite] = useState('');
     const [datosPago, setDatosPago] = useState(config.datosPago || '');
-    const [plantilla, setPlantilla] = useState<'disponible' | 'recordatorio'>('disponible');
+    const plantilla = 'disponible';
     const [loading, setLoading] = useState(false);
     const [alumnoSearch, setAlumnoSearch] = useState('');
     const filteredAlumnos = useMemo(() => {
@@ -70,9 +70,7 @@ export default function CobrarCuota() {
         const planText = plan === 'libre' ? 'Libre' : '3 Veces por Semana';
         const fechaText = fechaLimite ? new Date(fechaLimite).toLocaleDateString('es-AR') : 'A convenir';
 
-        const vars = plantilla === 'disponible'
-            ? [sanitizedNombre, mesText, montoText, planText, fechaText]
-            : [sanitizedNombre, mesText, montoText, planText];
+        const vars = [sanitizedNombre, mesText, montoText, planText, fechaText];
 
         const res = await sendWhatsAppTemplate(num, plantilla, vars);
 
@@ -194,16 +192,7 @@ export default function CobrarCuota() {
                         </div>
                     </div>
 
-                    <h3 className="section-title mt-2">💬 Plantilla de WhatsApp</h3>
-                    <div className="form-group">
-                        <label>Plantilla</label>
-                        <select className="form-select" value={plantilla} onChange={(e) => {
-                            setPlantilla(e.target.value as 'disponible' | 'recordatorio');
-                        }}>
-                            <option value="disponible">📅 Aviso de Cuota Disponible (disponible)</option>
-                            <option value="recordatorio">💰 Recordatorio de Pago Pendiente (recordatorio)</option>
-                        </select>
-                    </div>
+                    <h3 className="section-title mt-2">💬 Vista Previa de Plantilla (Aviso de Cuota Disponible)</h3>
 
                     <div className="message-preview">
                         <div className="message-bubble">

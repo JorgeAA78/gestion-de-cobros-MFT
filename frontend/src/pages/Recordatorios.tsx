@@ -29,7 +29,7 @@ export default function Recordatorios() {
     const MAX_LOTE = 20;
 
     const [mes, setMes] = useState(mesCurrent);
-    const [plantilla, setPlantilla] = useState<'disponible' | 'recordatorio'>('disponible');
+    const plantilla = 'recordatorio';
 
     const sending = Boolean(statusManual?.enProgreso);
 
@@ -180,14 +180,7 @@ export default function Recordatorios() {
 
                 {/* Template */}
                 <div className="card mt-2">
-                    <h3 className="section-title">💬 Plantilla de Recordatorio</h3>
-                    <div className="form-group">
-                        <label>Seleccionar Plantilla</label>
-                        <select className="form-select" value={plantilla} onChange={(e) => setPlantilla(e.target.value as 'disponible' | 'recordatorio')} disabled={sending}>
-                            <option value="disponible">📅 Aviso de Cuota Disponible (disponible)</option>
-                            <option value="recordatorio">💰 Recordatorio de Pago Pendiente (recordatorio)</option>
-                        </select>
-                    </div>
+                    <h3 className="section-title">💬 Vista Previa del Recordatorio</h3>
 
                     {sampleMsg && (
                         <div className="message-preview">
