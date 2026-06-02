@@ -28,6 +28,10 @@ export async function sendWhatsAppTemplate(
             headers,
             body: JSON.stringify({ to, template, vars }),
         });
+        if (res.status === 401) {
+            useAuthStore.getState().logout();
+            return { success: false, error: 'Sesión expirada' };
+        }
         return await res.json();
     } catch (e: any) {
         return { success: false, error: e.message };
@@ -44,6 +48,10 @@ export async function testConnection(
             headers,
             body: JSON.stringify({ apiKey }),
         });
+        if (res.status === 401) {
+            useAuthStore.getState().logout();
+            return { connected: false, error: 'Sesión expirada' };
+        }
         return await res.json();
     } catch (e: any) {
         return { connected: false, error: e.message };

@@ -22,6 +22,9 @@ async function apiGet<T>(path: string): Promise<T | null> {
         const headers = await getAuthHeaders();
         const res = await fetch(`${API_BASE}${path}`, { headers });
         if (res.ok) return res.json();
+        if (res.status === 401) {
+            useAuthStore.getState().logout();
+        }
     } catch { }
     return null;
 }
@@ -29,32 +32,41 @@ async function apiGet<T>(path: string): Promise<T | null> {
 async function apiPost(path: string, body: any) {
     try {
         const headers = await getAuthHeaders();
-        await fetch(`${API_BASE}${path}`, {
+        const res = await fetch(`${API_BASE}${path}`, {
             method: 'POST',
             headers,
             body: JSON.stringify(body),
         });
+        if (res.status === 401) {
+            useAuthStore.getState().logout();
+        }
     } catch { }
 }
 
 async function apiPut(path: string, body: any) {
     try {
         const headers = await getAuthHeaders();
-        await fetch(`${API_BASE}${path}`, {
+        const res = await fetch(`${API_BASE}${path}`, {
             method: 'PUT',
             headers,
             body: JSON.stringify(body),
         });
+        if (res.status === 401) {
+            useAuthStore.getState().logout();
+        }
     } catch { }
 }
 
 async function apiDelete(path: string) {
     try {
         const headers = await getAuthHeaders();
-        await fetch(`${API_BASE}${path}`, { 
+        const res = await fetch(`${API_BASE}${path}`, { 
             method: 'DELETE',
             headers
         });
+        if (res.status === 401) {
+            useAuthStore.getState().logout();
+        }
     } catch { }
 }
 
@@ -213,7 +225,12 @@ export const useStore = create<StoreState>()(
                         headers,
                         body: JSON.stringify(alumno),
                     })
-                        .then((res) => res.json())
+                        .then((res) => {
+                            if (res.status === 401) {
+                                useAuthStore.getState().logout();
+                            }
+                            return res.json();
+                        })
                         .then((result) => {
                             if (result.alumno?.id && result.alumno.id !== tempId) {
                                 set((s) => ({
@@ -402,6 +419,10 @@ export const useStore = create<StoreState>()(
                         headers,
                         body: JSON.stringify({ alumnoIds, template, mes, anio }),
                     });
+                    if (res.status === 401) {
+                        useAuthStore.getState().logout();
+                        return { success: false, error: 'Sesión expirada' };
+                    }
                     if (res.ok) {
                         await get().obtenerStatusEnvioManual();
                         return { success: true };

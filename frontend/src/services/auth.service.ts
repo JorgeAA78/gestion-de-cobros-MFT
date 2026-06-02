@@ -1,4 +1,5 @@
 // ─── Servicio de autenticación para el frontend ──────────────────────────────
+import { useAuthStore } from '../store/authStore';
 
 const API_URL = (import.meta as any).env?.PROD ? '' : 'http://localhost:3001';
 
@@ -81,6 +82,9 @@ export async function obtenerPerfil(token: string): Promise<AuthResponse> {
             'Authorization': `Bearer ${token}`
         },
     });
+    if (response.status === 401) {
+        useAuthStore.getState().logout();
+    }
     return response.json();
 }
 
@@ -100,6 +104,9 @@ export async function generarInvitacion(token: string, diasValidez: number = 7):
         },
         body: JSON.stringify({ diasValidez }),
     });
+    if (response.status === 401) {
+        useAuthStore.getState().logout();
+    }
     return response.json();
 }
 
@@ -109,6 +116,9 @@ export async function listarInvitaciones(token: string): Promise<any> {
             'Authorization': `Bearer ${token}`
         },
     });
+    if (response.status === 401) {
+        useAuthStore.getState().logout();
+    }
     return response.json();
 }
 
@@ -119,6 +129,9 @@ export async function eliminarInvitacion(token: string, id: string): Promise<any
             'Authorization': `Bearer ${token}`
         },
     });
+    if (response.status === 401) {
+        useAuthStore.getState().logout();
+    }
     return response.json();
 }
 

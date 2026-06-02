@@ -124,9 +124,12 @@ async function sendYCloudTemplate(
         if (res.ok) {
             return { success: true };
         } else {
-            return { success: false, error: `HTTP ${res.status}: ${responseText.substring(0, 150)}` };
+            const errorMsg = `HTTP ${res.status}: ${responseText.substring(0, 150)}`;
+            console.error(`❌ [sendYCloudTemplate] YCloud error sending message to ${toNumber}:`, errorMsg);
+            return { success: false, error: errorMsg };
         }
     } catch (e: any) {
+        console.error(`❌ [sendYCloudTemplate] Network error sending message to ${toNumber}:`, e.message);
         return { success: false, error: e.message };
     }
 }
