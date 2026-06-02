@@ -54,6 +54,24 @@ export default function Dashboard() {
             .reduce((sum, p) => sum + p.monto, 0);
     }, [pagos, mes, anio]);
 
+    const historialMensual = useMemo(() => {
+        const agrupado: Record<string, { mes: number; anio: number; total: number }> = {};
+        pagos.forEach((p) => {
+            if (p.estado === 'pagado') {
+                const key = `${p.anio}-${p.mes}`;
+                if (!agrupado[key]) {
+                    agrupado[key] = { mes: p.mes, anio: p.anio, total: 0 };
+                }
+                agrupado[key].total += p.monto;
+            }
+        });
+        return Object.values(agrupado).sort((a, b) => {
+            if (a.anio !== b.anio) return b.anio - a.anio;
+            return b.mes - a.mes;
+        });
+    }, [pagos]);
+
+
     const [busqueda, setBusqueda] = useState('');
     const [seleccionados, setSeleccionados] = useState<string[]>([]);
 
@@ -220,6 +238,29 @@ export default function Dashboard() {
                         </h3>
                         <p>Recaudado ({MONTH_NAMES[mes - 1]})</p>
                     </div>
+                </div>
+            </div>
+
+            {/* Historial Mensual */}
+            <div className="card" style={{ animationDelay: '0.15s', marginBottom: 'var(--space-2xl)' }}>
+                <h2 className="section-title">📅 Historial de Recaudación Mensual</h2>
+                <div className="history-grid">
+                    {historialMensual.length === 0 ? (
+                        <p style={{ color: 'var(--text-dim)', fontStyle: 'italic', padding: 'var(--space-md) 0' }}>
+                            No se registran cobros realizados aún.
+                        </p>
+                    ) : (
+                        historialMensual.map((item) => (
+                            <div key={`${item.anio}-${item.mes}`} className="history-card-item">
+                                <span className="history-date">
+                                    {MONTH_NAMES[item.mes - 1]} {item.anio}
+                                </span>
+                                <strong className="history-amount">
+                                    {formatCurrency(item.total)}
+                                </strong>
+                            </div>
+                        ))
+                    )}
                 </div>
             </div>
 
