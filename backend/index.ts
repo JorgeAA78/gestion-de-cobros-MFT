@@ -3,6 +3,9 @@ if (process.env.NODE_ENV !== 'production') {
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 }
 
+// Configurar la zona horaria por defecto para asegurar la hora de ejecución del cron
+process.env.TZ = process.env.TZ || 'America/Argentina/Buenos_Aires';
+
 import express from 'express';
 import cors from 'cors';
 import cron from 'node-cron';
