@@ -49,8 +49,10 @@ export default function Dashboard() {
     }, [alumnos, pagos, mes, anio]);
 
     const totalRecaudado = useMemo(() => {
-        return pagos.filter((p) => p.estado === 'pagado').reduce((sum, p) => sum + p.monto, 0);
-    }, [pagos]);
+        return pagos
+            .filter((p) => p.estado === 'pagado' && p.mes === mes && p.anio === anio)
+            .reduce((sum, p) => sum + p.monto, 0);
+    }, [pagos, mes, anio]);
 
     const [busqueda, setBusqueda] = useState('');
     const [seleccionados, setSeleccionados] = useState<string[]>([]);
@@ -216,7 +218,7 @@ export default function Dashboard() {
                         <h3 style={{ fontSize: statFontSize(formatCurrency(totalRecaudado)) }}>
                             {formatCurrency(totalRecaudado)}
                         </h3>
-                        <p>Total Recaudado</p>
+                        <p>Recaudado ({MONTH_NAMES[mes - 1]})</p>
                     </div>
                 </div>
             </div>

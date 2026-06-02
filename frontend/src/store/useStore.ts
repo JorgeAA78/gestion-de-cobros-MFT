@@ -341,7 +341,7 @@ export const useStore = create<StoreState>()(
                 const anio = now.getFullYear();
                 const pendientes = state.getAlumnosPendientes(mes, anio);
                 const totalRecaudado = state.pagos
-                    .filter((p) => p.estado === 'pagado')
+                    .filter((p) => p.estado === 'pagado' && p.mes === mes && p.anio === anio)
                     .reduce((sum, p) => sum + p.monto, 0);
                 return {
                     totalAlumnos: state.alumnos.length,
