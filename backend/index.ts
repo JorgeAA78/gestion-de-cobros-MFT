@@ -199,15 +199,14 @@ function getPendientes(alumnos: Alumno[], pagos: Pago[], mes: number, anio: numb
     });
 }
 
-// Divide alumnos en grupos para cada día de envío
+// Divide alumnos en grupos para cada día de envío (40% del total por día)
 function getAlumnosParaHoy(alumnos: Alumno[], diaActual: number, diasEnvio: number[]): Alumno[] {
     if (!diasEnvio.includes(diaActual)) {
         return []; // No es día de envío
     }
 
     const totalAlumnos = alumnos.length;
-    const totalDias = diasEnvio.length;
-    const alumnosPorDia = Math.ceil(totalAlumnos / totalDias);
+    const alumnosPorDia = Math.ceil(totalAlumnos * 0.4);
 
     // Índice del día actual
     const indiceDia = diasEnvio.indexOf(diaActual);
@@ -215,6 +214,10 @@ function getAlumnosParaHoy(alumnos: Alumno[], diaActual: number, diasEnvio: numb
     // Calcular rango de alumnos para hoy
     const inicio = indiceDia * alumnosPorDia;
     const fin = Math.min(inicio + alumnosPorDia, totalAlumnos);
+
+    if (inicio >= totalAlumnos) {
+        return [];
+    }
 
     return alumnos.slice(inicio, fin);
 }
@@ -336,10 +339,10 @@ async function envioAutomatico() {
     }
 
     const totalPendientes = pendientesSinNotificar.length;
-    const alumnosPorDia = Math.ceil(totalPendientes / diasEnvio.length);
+    const alumnosPorDia = Math.ceil(totalPendientes * 0.4);
     const tipoTexto = esPrimerEnvio ? '1er RECORDATORIO' : '2do RECORDATORIO';
 
-    console.log(`📊 [CRON] ${tipoTexto}: ${totalPendientes} alumnos ÷ ${diasEnvio.length} días = ~${alumnosPorDia} por día`);
+    console.log(`📊 [CRON] ${tipoTexto}: ${totalPendientes} alumnos, enviando ~40% (~${alumnosPorDia}) por día`);
     console.log(`📱 [CRON] Día ${dia}: Enviando a ${alumnosHoy.length} alumnos...`);
 
     // Seleccionar template según tipo de envío
