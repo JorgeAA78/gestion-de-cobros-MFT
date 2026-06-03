@@ -30,7 +30,7 @@ export default function Recordatorios() {
     const MAX_LOTE = 20;
 
     const [mes, setMes] = useState(mesCurrent);
-    const plantilla = 'disponible';
+    const plantilla = 'recordatorio';
 
     const sending = Boolean(statusManual?.enProgreso);
 
@@ -117,7 +117,7 @@ export default function Recordatorios() {
             monto: formatCurrency(pendientes[0].cuota),
             mes: MONTH_NAMES[mes - 1],
             plan: pendientes[0].plan === 'libre' ? 'Libre' : '3 Veces por Semana',
-            fecha: 'A convenir',
+            fecha: `${pendientes[0].diaVencimiento ?? 10} de ${MONTH_NAMES[mes - 1]}`,
         })
         : '';
 
