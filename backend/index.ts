@@ -369,7 +369,7 @@ async function envioAutomatico() {
                 MONTHS[mes - 1],
                 formatCurrency(a.cuota),
                 a.plan === 'libre' ? 'Libre' : '3 Veces por Semana',
-                `${diaVenc} de ${MONTHS[mes - 1]}`
+                'A convenir'
               ]
             : [
                 a.nombre,
@@ -775,7 +775,7 @@ app.post('/api/recordatorios/send-manual', authMiddleware, async (req, res) => {
                             MONTHS[mes - 1],
                             formatCurrency(a.cuota),
                             a.plan === 'libre' ? 'Libre' : '3 Veces por Semana',
-                            `${diaVenc} de ${MONTHS[mes - 1]}`
+                            'A convenir'
                           ]
                         : [
                             a.nombre,
