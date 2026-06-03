@@ -29,6 +29,7 @@ import {
     guardarConfig,
     registrarRecordatorioEnviado,
     eliminarRecordatorioEnviado,
+    eliminarRecordatoriosDelMes,
     obtenerRecordatoriosEnviados,
     obtenerMensajesEnviados,
     incrementarMensajesEnviados,
@@ -648,6 +649,24 @@ app.delete('/api/recordatorios/:alumnoId/:mes/:anio/:tipo', authMiddleware, asyn
     } catch (error) {
         console.error('Error eliminando recordatorio:', error);
         res.status(500).json({ error: 'Error al eliminar recordatorio' });
+    }
+});
+
+// DELETE all recordatorios for a month
+app.delete('/api/recordatorios/clear-month/:mes/:anio', authMiddleware, async (req, res) => {
+    try {
+        const mes = parseInt(req.params.mes as string);
+        const anio = parseInt(req.params.anio as string);
+        
+        if (isNaN(mes) || isNaN(anio)) {
+            return res.status(400).json({ error: 'Mes o año inválidos' });
+        }
+        
+        await eliminarRecordatoriosDelMes(mes, anio);
+        res.json({ ok: true });
+    } catch (error) {
+        console.error('Error eliminando recordatorios del mes:', error);
+        res.status(500).json({ error: 'Error al eliminar recordatorios del mes' });
     }
 });
 

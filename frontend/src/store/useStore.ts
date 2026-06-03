@@ -152,6 +152,7 @@ interface StoreState {
     obtenerStatusEnvioManual: () => Promise<void>;
     iniciarEnvioManual: (alumnoIds: string[], template: string, mes: number, anio: number) => Promise<{ success: boolean; error?: string }>;
     cancelarEnvioManual: () => Promise<void>;
+    clearRecordatoriosMes: (mes: number, anio: number) => Promise<{ success: boolean; error?: string }>;
 }
 
 const DEFAULT_PLANTILLA = `¡Hola {nombre}! 👋🥋
@@ -437,6 +438,39 @@ export const useStore = create<StoreState>()(
             cancelarEnvioManual: async () => {
                 await apiPost('/recordatorios/cancel-manual', {});
                 await get().obtenerStatusEnvioManual();
+            },
+            clearRecordatoriosMes: async (mes: number, anio: number) => {
+                try {
+                    const headers = await getAuthHeaders();
+                    const res = await fetch(`${API_BASE}/recordatorios/clear-month/${mes}/${anio}`, {
+                        method: 'DELETE',
+                        headers,
+                    });
+                    if (res.status === 401) {
+                        useAuthStore.getState().logout();
+                        return { success: false, error: 'Sesión expirada' };
+                    }
+                    if (res.ok) {
+                        const next = { ...get().recordatoriosEnviados };
+                        Object.keys(next).forEach((key) => {
+                            const parts = key.split('_');
+                            if (parts.length === 3) {
+                                const m = parseInt(parts[1]);
+                                const a = parseInt(parts[2]);
+                                if (m === mes && a === anio) {
+                                    delete next[key];
+                                }
+                            }
+                        });
+                        set({ recordatoriosEnviados: next });
+                        return { success: true };
+                    } else {
+                        const errData = await res.json() as { error?: string };
+                        return { success: false, error: errData.error || `HTTP ${res.status}` };
+                    }
+                } catch (e) {
+                    return { success: false, error: e instanceof Error ? e.message : String(e) };
+                }
             },
         }),
         { name: 'mft-store' }

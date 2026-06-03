@@ -530,6 +530,22 @@ export async function eliminarRecordatorioEnviado(alumnoId: string, mes: number,
     writeDataJSON(store);
 }
 
+export async function eliminarRecordatoriosDelMes(mes: number, anio: number): Promise<void> {
+    if (isSupabaseConfigured() && supabase) {
+        const { error } = await supabase.from('recordatorios_enviados')
+            .delete()
+            .eq('mes', mes)
+            .eq('anio', anio);
+        if (error) console.error('Error eliminando recordatorios del mes:', error);
+        return;
+    }
+    const store = readDataJSON();
+    if (!store.enviosRealizados) return;
+    store.enviosRealizados = store.enviosRealizados.filter(r => !(r.mes === mes && r.anio === anio));
+    writeDataJSON(store);
+}
+
+
 export async function obtenerMensajesEnviados(): Promise<number> {
     if (isSupabaseConfigured() && supabase) {
         const { data, error } = await supabase

@@ -20,6 +20,7 @@ export default function Recordatorios() {
     const statusManual = useStore((s) => s.envioManualStatus);
     const iniciarEnvioManual = useStore((s) => s.iniciarEnvioManual);
     const cancelarEnvioManual = useStore((s) => s.cancelarEnvioManual);
+    const clearRecordatoriosMes = useStore((s) => s.clearRecordatoriosMes);
     const syncFromServer = useStore((s) => s.syncFromServer);
 
     const now = new Date();
@@ -99,6 +100,17 @@ export default function Recordatorios() {
         }
     };
 
+    const handleResetHistory = async () => {
+        if (window.confirm(`¿Estás seguro de que querés borrar el historial de recordatorios enviados de ${MONTH_NAMES[mes - 1]}? Esto te permitirá volver a enviar los recordatorios a todos los alumnos que aún no pagaron.`)) {
+            const res = await clearRecordatoriosMes(mes, anio);
+            if (res.success) {
+                showToast(`✅ Historial de envíos de ${MONTH_NAMES[mes - 1]} reiniciado con éxito.`, 'success');
+            } else {
+                showToast(`❌ Error al reiniciar historial: ${res.error}`, 'error');
+            }
+        }
+    };
+
     const sampleMsg = pendientes.length > 0
         ? buildMessage(PREVIEW_TEMPLATES[plantilla], {
             nombre: pendientes[0].nombre,
@@ -175,6 +187,23 @@ export default function Recordatorios() {
                     }}>
                         💡 <strong>Envío inteligente:</strong> Solo se enviarán mensajes a los {pendientes.length} alumnos que
                         NO pagaron {MONTH_NAMES[mes - 1]}. Los que ya abonaron no recibirán el recordatorio.
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 'var(--space-md)' }}>
+                        <button
+                            className="btn btn-danger"
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                fontSize: '0.85rem',
+                                padding: '8px 16px',
+                            }}
+                            disabled={sending}
+                            onClick={handleResetHistory}
+                        >
+                            🔄 Reiniciar Envíos de {MONTH_NAMES[mes - 1]}
+                        </button>
                     </div>
                 </div>
 
