@@ -3,11 +3,16 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
 import { useStore } from './store/useStore.ts'
+import { useAuthStore } from './store/authStore.ts'
 
 function Root() {
   const syncFromServer = useStore((s) => s.syncFromServer);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   useEffect(() => {
+    // Solo sincronizar cuando hay sesión iniciada (evita 401 en el login)
+    if (!isAuthenticated) return;
+
     // Sincronización inicial al cargar
     syncFromServer();
 
@@ -26,7 +31,7 @@ function Root() {
       clearInterval(interval);
       window.removeEventListener('focus', handleFocus);
     };
-  }, [syncFromServer]);
+  }, [isAuthenticated, syncFromServer]);
 
   return (
     <StrictMode>
