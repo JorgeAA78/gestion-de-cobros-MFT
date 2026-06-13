@@ -147,46 +147,6 @@ function formatCurrency(n: number) {
     return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0 }).format(n);
 }
 
-const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
-function randomDelay(index: number) {
-    // Cada 10 mensajes, pausa más larga (5-8 min)
-    if (index > 0 && index % 10 === 0) {
-        const sec = Math.floor(Math.random() * (480 - 300 + 1)) + 300;
-        console.log(`  ⏸️ Pausa larga entre lotes... (${Math.round(sec/60)} min)`);
-        return delay(sec * 1000);
-    }
-    // Delay normal entre mensajes
-    const sec = Math.floor(Math.random() * (240 - 120 + 1)) + 120;
-    console.log(`  ⏳ Esperando ${sec}s antes del próximo mensaje...`);
-    return delay(sec * 1000);
-}
-
-async function randomDelayInterruptible(index: number, statusObj: { cancelRequest?: boolean }): Promise<boolean> {
-    let sec = 0;
-    if (index > 0 && index % 10 === 0) {
-        sec = Math.floor(Math.random() * (480 - 300 + 1)) + 300;
-        console.log(`  ⏸️ Pausa larga entre lotes... (${Math.round(sec/60)} min)`);
-    } else {
-        sec = Math.floor(Math.random() * (240 - 120 + 1)) + 120;
-        console.log(`  ⏳ Esperando ${sec}s antes del próximo mensaje...`);
-    }
-
-    const intervalMs = 1000;
-    const totalMs = sec * 1000;
-    let elapsedMs = 0;
-
-    while (elapsedMs < totalMs) {
-        if (statusObj.cancelRequest) {
-            console.log('🛑 [MANUAL BACKGROUND] Delay interrumpido por solicitud de cancelación.');
-            return false;
-        }
-        await new Promise((resolve) => setTimeout(resolve, intervalMs));
-        elapsedMs += intervalMs;
-    }
-    return true;
-}
-
 // ─── Cron: Envío Automático ─────────────────────────────────
 // Primer recordatorio: Días 1-5 (aviso de cuota disponible)
 // Segundo recordatorio: Días 10-14 (solo a los que no pagaron Y ya vencieron)
@@ -201,29 +161,6 @@ function getPendientes(alumnos: Alumno[], pagos: Pago[], mes: number, anio: numb
         const pago = pagos.find((p) => p.alumnoId === a.id && p.mes === mes && p.anio === anio);
         return !pago || pago.estado !== 'pagado';
     });
-}
-
-// Divide alumnos en grupos para cada día de envío (40% del total por día)
-function getAlumnosParaHoy(alumnos: Alumno[], diaActual: number, diasEnvio: number[]): Alumno[] {
-    if (!diasEnvio.includes(diaActual)) {
-        return []; // No es día de envío
-    }
-
-    const totalAlumnos = alumnos.length;
-    const alumnosPorDia = Math.ceil(totalAlumnos * 0.4);
-
-    // Índice del día actual
-    const indiceDia = diasEnvio.indexOf(diaActual);
-
-    // Calcular rango de alumnos para hoy
-    const inicio = indiceDia * alumnosPorDia;
-    const fin = Math.min(inicio + alumnosPorDia, totalAlumnos);
-
-    if (inicio >= totalAlumnos) {
-        return [];
-    }
-
-    return alumnos.slice(inicio, fin);
 }
 
 // Templates de mensajes
@@ -286,7 +223,6 @@ async function envioAutomatico() {
     }
 
     const tipoEnvio = esPrimerEnvio ? 'primer_recordatorio' : 'segundo_recordatorio';
-    const diasEnvio = esPrimerEnvio ? DIAS_PRIMER_ENVIO : DIAS_SEGUNDO_ENVIO;
 
     // Obtener todos los pendientes del mes (SOLO los que NO pagaron)
     let todosPendientes = getPendientes(data.alumnos, data.pagos, mes, anio);
@@ -334,19 +270,12 @@ async function envioAutomatico() {
         return;
     }
 
-    // Obtener solo los alumnos que corresponden a hoy
-    const alumnosHoy = getAlumnosParaHoy(pendientesSinNotificar, dia, diasEnvio);
-
-    if (alumnosHoy.length === 0) {
-        console.log(`✅ [CRON] No hay alumnos asignados para enviar hoy (día ${dia}).`);
-        return;
-    }
-
-    const totalPendientes = pendientesSinNotificar.length;
-    const alumnosPorDia = Math.ceil(totalPendientes * 0.4);
+    // Procesar TODOS los pendientes sin notificar (de A a Z) en cada ejecución.
+    // La protección anti-duplicados (recordatorios_enviados) evita reenvíos.
+    const alumnosHoy = pendientesSinNotificar;
     const tipoTexto = esPrimerEnvio ? '1er RECORDATORIO' : '2do RECORDATORIO';
 
-    console.log(`📊 [CRON] ${tipoTexto}: ${totalPendientes} alumnos, enviando ~40% (~${alumnosPorDia}) por día`);
+    console.log(`📊 [CRON] ${tipoTexto}: ${alumnosHoy.length} alumnos pendientes sin notificar`);
     console.log(`📱 [CRON] Día ${dia}: Enviando a ${alumnosHoy.length} alumnos...`);
 
     // Seleccionar template según tipo de envío
@@ -388,9 +317,6 @@ async function envioAutomatico() {
             failed++;
             console.log(`  ❌ ${a.nombre} — Error: ${res.error}`);
         }
-
-        // Delay anti-spam entre mensajes
-        if (i < alumnosHoy.length - 1) await randomDelay(i + 1);
     }
 
     if (sent > 0) {
@@ -798,14 +724,6 @@ app.post('/api/recordatorios/send-manual', authMiddleware, async (req, res) => {
                         statusEnvioManual.fallidos++;
                         statusEnvioManual.resultados[alumnoId] = 'error';
                         console.error(`  ❌ [MANUAL BACKGROUND] Error enviando a ${a.nombre}:`, resSend.error);
-                    }
-                    
-                    // Retardo anti-spam únicamente si no es el último elemento y el envío no fue cancelado
-                    if (i < alumnoIds.length - 1 && !statusEnvioManual.cancelRequest) {
-                        const completed = await randomDelayInterruptible(mensajesIntentados, statusEnvioManual);
-                        if (!completed) {
-                            break;
-                        }
                     }
                 }
                 
