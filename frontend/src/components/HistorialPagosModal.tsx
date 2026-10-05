@@ -332,7 +332,7 @@ export default function HistorialPagosModal({ alumno, isOpen, onClose }: Props) 
                 )}
 
                 {/* ─── Contenido Scrollable ─── */}
-                <div className="historial-modal-body">
+                <div className="historial-modal-body" style={{ overflowX: 'hidden', width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
                     {/* Barra de control superior: Selector de Año + Resumen Anual */}
                     <div
                         style={{
@@ -343,11 +343,15 @@ export default function HistorialPagosModal({ alumno, isOpen, onClose }: Props) 
                             display: 'flex',
                             flexDirection: 'column',
                             gap: '0.75rem',
+                            width: '100%',
+                            maxWidth: '100%',
+                            boxSizing: 'border-box',
+                            overflow: 'hidden',
                         }}
                     >
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
+                        <div className="historial-control-bar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem', width: '100%' }}>
                             {/* Selector de Año */}
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                            <div className="historial-year-row" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
                                 <span style={{ fontSize: '0.85rem', color: 'rgba(134,239,172,0.8)', fontWeight: 600 }}>
                                     📅 Año:
                                 </span>
@@ -401,7 +405,7 @@ export default function HistorialPagosModal({ alumno, isOpen, onClose }: Props) 
                             </div>
 
                             {/* Botones de acción rápida */}
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                            <div className="historial-quick-actions" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
                                 {anioSeleccionado === 2026 && (
                                     <button
                                         type="button"
@@ -445,13 +449,14 @@ export default function HistorialPagosModal({ alumno, isOpen, onClose }: Props) 
                         </div>
 
                         {/* Tarjetas de Métricas del Año */}
-                        <div className="historial-stats-boxes">
+                        <div className="historial-stats-boxes" style={{ width: '100%', boxSizing: 'border-box' }}>
                             <div
                                 style={{
                                     background: 'rgba(34,197,94,0.08)',
                                     border: '1px solid rgba(34,197,94,0.2)',
                                     borderRadius: 10,
                                     padding: '0.75rem 1rem',
+                                    minWidth: 0,
                                 }}
                             >
                                 <div style={{ fontSize: '0.75rem', color: 'rgba(134,239,172,0.7)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
@@ -468,14 +473,17 @@ export default function HistorialPagosModal({ alumno, isOpen, onClose }: Props) 
                                     border: `1px solid ${estadisticasAnio.pendientes > 0 ? 'rgba(239,68,68,0.25)' : 'rgba(255,255,255,0.08)'}`,
                                     borderRadius: 10,
                                     padding: '0.75rem 1rem',
+                                    minWidth: 0,
                                 }}
                             >
                                 <div style={{ fontSize: '0.75rem', color: estadisticasAnio.pendientes > 0 ? '#fca5a5' : 'rgba(134,239,172,0.7)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                                     Cuotas Pendientes
                                 </div>
-                                <div style={{ fontSize: '1.4rem', fontWeight: 800, color: estadisticasAnio.pendientes > 0 ? '#ef4444' : '#a3e635', marginTop: 2 }}>
-                                    {estadisticasAnio.pendientes}
-                                    <span style={{ fontSize: '0.8rem', fontWeight: 400, marginLeft: 6, color: 'rgba(255,255,255,0.5)' }}>
+                                <div style={{ display: 'flex', alignItems: 'baseline', flexWrap: 'wrap', gap: '4px', marginTop: 2 }}>
+                                    <span style={{ fontSize: '1.4rem', fontWeight: 800, color: estadisticasAnio.pendientes > 0 ? '#ef4444' : '#a3e635' }}>
+                                        {estadisticasAnio.pendientes}
+                                    </span>
+                                    <span style={{ fontSize: '0.72rem', fontWeight: 500, color: estadisticasAnio.pendientes > 0 ? '#fca5a5' : 'rgba(134,239,172,0.8)' }}>
                                         {estadisticasAnio.pendientes === 0 ? '(Al día ✨)' : '(Por regularizar ⚠️)'}
                                     </span>
                                 </div>
@@ -600,10 +608,10 @@ export default function HistorialPagosModal({ alumno, isOpen, onClose }: Props) 
                     )}
 
                     {/* ─── Barra de Filtros y Búsqueda en el Historial ─── */}
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                            <span style={{ fontSize: '0.85rem', color: 'rgba(134,239,172,0.7)', fontWeight: 600 }}>Filtrar:</span>
-                            <div style={{ display: 'flex', gap: '4px', background: 'rgba(255,255,255,0.03)', padding: 3, borderRadius: 8, border: '1px solid rgba(34,197,94,0.12)' }}>
+                    <div className="historial-filters-bar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', width: '100%' }}>
+                            <span style={{ fontSize: '0.82rem', color: 'rgba(134,239,172,0.7)', fontWeight: 600 }}>Filtrar:</span>
+                            <div className="historial-filter-buttons" style={{ display: 'flex', gap: '4px', background: 'rgba(255,255,255,0.03)', padding: 3, borderRadius: 8, border: '1px solid rgba(34,197,94,0.12)', flex: 1 }}>
                                 <button
                                     type="button"
                                     onClick={() => setFiltroEstado('todos')}
@@ -612,10 +620,11 @@ export default function HistorialPagosModal({ alumno, isOpen, onClose }: Props) 
                                         color: filtroEstado === 'todos' ? '#4ade80' : 'rgba(134,239,172,0.6)',
                                         border: 'none',
                                         borderRadius: 6,
-                                        padding: '4px 10px',
-                                        fontSize: '0.78rem',
+                                        padding: '4px 8px',
+                                        fontSize: '0.75rem',
                                         cursor: 'pointer',
                                         fontWeight: filtroEstado === 'todos' ? 600 : 400,
+                                        flex: 1,
                                     }}
                                 >
                                     Todos (12)
@@ -628,10 +637,11 @@ export default function HistorialPagosModal({ alumno, isOpen, onClose }: Props) 
                                         color: filtroEstado === 'pagados' ? '#4ade80' : 'rgba(134,239,172,0.6)',
                                         border: 'none',
                                         borderRadius: 6,
-                                        padding: '4px 10px',
-                                        fontSize: '0.78rem',
+                                        padding: '4px 8px',
+                                        fontSize: '0.75rem',
                                         cursor: 'pointer',
                                         fontWeight: filtroEstado === 'pagados' ? 600 : 400,
+                                        flex: 1,
                                     }}
                                 >
                                     ✅ Pagados ({estadisticasAnio.pagados})
@@ -644,10 +654,11 @@ export default function HistorialPagosModal({ alumno, isOpen, onClose }: Props) 
                                         color: filtroEstado === 'pendientes' ? '#f87171' : 'rgba(134,239,172,0.6)',
                                         border: 'none',
                                         borderRadius: 6,
-                                        padding: '4px 10px',
-                                        fontSize: '0.78rem',
+                                        padding: '4px 8px',
+                                        fontSize: '0.75rem',
                                         cursor: 'pointer',
                                         fontWeight: filtroEstado === 'pendientes' ? 600 : 400,
+                                        flex: 1,
                                     }}
                                 >
                                     ⏳ Pendientes ({estadisticasAnio.pendientes})
@@ -656,7 +667,7 @@ export default function HistorialPagosModal({ alumno, isOpen, onClose }: Props) 
                         </div>
 
                         {/* Input de Búsqueda rápida */}
-                        <div style={{ position: 'relative', minWidth: 200 }}>
+                        <div className="historial-search-wrapper" style={{ position: 'relative', width: '100%' }}>
                             <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', opacity: 0.5, fontSize: '0.85rem' }}>🔍</span>
                             <input
                                 className="form-input"
@@ -837,6 +848,10 @@ export default function HistorialPagosModal({ alumno, isOpen, onClose }: Props) 
                             border: '1px solid rgba(34,197,94,0.12)',
                             borderRadius: 'var(--radius-md)',
                             padding: '1rem',
+                            width: '100%',
+                            maxWidth: '100%',
+                            boxSizing: 'border-box',
+                            overflow: 'hidden',
                         }}
                     >
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
@@ -913,6 +928,7 @@ export default function HistorialPagosModal({ alumno, isOpen, onClose }: Props) 
 
                 {/* ─── Footer del Modal ─── */}
                 <div
+                    className="historial-modal-footer"
                     style={{
                         padding: '0.75rem 1.5rem',
                         borderTop: '1px solid rgba(34, 197, 94, 0.15)',

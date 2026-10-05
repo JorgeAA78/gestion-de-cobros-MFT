@@ -76,9 +76,31 @@ export default function Dashboard() {
     const [busqueda, setBusqueda] = useState('');
     const [seleccionados, setSeleccionados] = useState<string[]>([]);
     const [tabSituacion, setTabSituacion] = useState<'todos' | EstadoAlumno>('activo');
+    
+    // Detección robusta de dispositivos móviles para mostrar tarjetas por defecto
     const [vistaModo, setVistaModo] = useState<'tarjetas' | 'tabla'>(() => {
-        return typeof window !== 'undefined' && window.innerWidth <= 768 ? 'tarjetas' : 'tabla';
+        if (typeof window === 'undefined') return 'tarjetas';
+        try {
+            const saved = localStorage.getItem('mft_vista_modo');
+            if (saved === 'tarjetas' || saved === 'tabla') return saved;
+        } catch {
+            // ignore
+        }
+        const ua = navigator.userAgent || '';
+        const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+        const isSmall = window.innerWidth <= 900;
+        const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+        return (isMobileUA || (isTouch && isSmall) || isSmall) ? 'tarjetas' : 'tabla';
     });
+
+    const handleSetVistaModo = (modo: 'tarjetas' | 'tabla') => {
+        setVistaModo(modo);
+        try {
+            localStorage.setItem('mft_vista_modo', modo);
+        } catch {
+            // ignore
+        }
+    };
 
     // ── Modal de Historial de Pagos ──────────────────────────
     const [alumnoHistorial, setAlumnoHistorial] = useState<Alumno | null>(null);
@@ -354,7 +376,7 @@ export default function Dashboard() {
                             <button
                                 type="button"
                                 className={vistaModo === 'tarjetas' ? 'active' : ''}
-                                onClick={() => setVistaModo('tarjetas')}
+                                onClick={() => handleSetVistaModo('tarjetas')}
                                 title="Vista rápida en tarjetas para móvil"
                             >
                                 📱 Tarjetas
@@ -362,7 +384,7 @@ export default function Dashboard() {
                             <button
                                 type="button"
                                 className={vistaModo === 'tabla' ? 'active' : ''}
-                                onClick={() => setVistaModo('tabla')}
+                                onClick={() => handleSetVistaModo('tabla')}
                                 title="Vista completa en tabla clásica"
                             >
                                 📄 Tabla
