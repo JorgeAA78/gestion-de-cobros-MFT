@@ -1,6 +1,5 @@
 import { useAuthStore } from '../store/authStore';
-
-const API_BASE = (import.meta as any).env?.PROD ? '/api' : 'http://localhost:3001/api';
+import { API_BASE } from '../config/api';
 
 async function getAuthHeaders() {
     const token = useAuthStore.getState().token;

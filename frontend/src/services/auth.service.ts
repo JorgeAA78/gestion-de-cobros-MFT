@@ -1,7 +1,6 @@
 // ─── Servicio de autenticación para el frontend ──────────────────────────────
 import { useAuthStore } from '../store/authStore';
-
-const API_URL = (import.meta as any).env?.PROD ? '' : 'http://localhost:3001';
+import { API_URL } from '../config/api';
 
 interface RegistroData {
     email: string;

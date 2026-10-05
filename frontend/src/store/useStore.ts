@@ -3,8 +3,7 @@ import { persist } from 'zustand/middleware';
 import type { Alumno, PagoMensual, AppConfig, ActivityLog, RecordatorioMap, RecordatorioTipo, EnvioManualStatus } from '../types';
 
 import { useAuthStore } from './authStore';
-
-const API_BASE = (import.meta as any).env?.PROD ? '/api' : 'http://localhost:3001/api';
+import { API_BASE } from '../config/api';
 
 const RECORDATORIO_TIPOS: RecordatorioTipo[] = ['manual', 'primer_recordatorio', 'segundo_recordatorio'];
 
