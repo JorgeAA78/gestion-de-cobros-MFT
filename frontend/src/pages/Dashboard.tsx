@@ -782,11 +782,13 @@ export default function Dashboard() {
             )}
 
             {/* ── Modal de Historial de Pagos de Alumno ──────────────────────── */}
-            <HistorialPagosModal
-                alumno={alumnoHistorial}
-                isOpen={isHistorialOpen}
-                onClose={closeHistorial}
-            />
+            {isHistorialOpen && alumnoHistorial && (
+                <HistorialPagosModal
+                    alumno={alumnoHistorial}
+                    isOpen={isHistorialOpen}
+                    onClose={closeHistorial}
+                />
+            )}
         </>
     );
 }

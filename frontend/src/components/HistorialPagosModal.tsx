@@ -34,13 +34,13 @@ export default function HistorialPagosModal({ alumno, isOpen, onClose }: Props) 
     });
     const [mostrarFormNuevo, setMostrarFormNuevo] = useState(false);
 
-    // Si no está abierto o no hay alumno, no renderizar
-    if (!isOpen || !alumno) return null;
-
-    const esActivo = alumno.estado === 'activo';
+    const esActivo = alumno ? (alumno.estado || 'activo') === 'activo' : false;
 
     // Obtener todos los pagos registrados para este alumno
-    const pagosAlumno = pagos.filter((p) => p.alumnoId === alumno.id);
+    const pagosAlumno = useMemo(() => {
+        if (!alumno) return [];
+        return pagos.filter((p) => p.alumnoId === alumno.id);
+    }, [pagos, alumno]);
 
     // Mapa de pagos por clave "mes-anio"
     const pagosMap = useMemo(() => {
@@ -56,13 +56,14 @@ export default function HistorialPagosModal({ alumno, isOpen, onClose }: Props) 
         let pagados = 0;
         let pendientes = 0;
         let totalRecaudado = 0;
+        const cuotaBase = alumno?.cuota || 0;
 
         for (let m = 1; m <= 12; m++) {
             const pago = pagosMap.get(`${m}-${anioSeleccionado}`);
-            const estaPagado = pago && pago.estado === 'pagado';
+            const estaPagado = Boolean(pago && pago.estado === 'pagado');
             if (estaPagado) {
                 pagados++;
-                totalRecaudado += pago.monto || alumno.cuota || 0;
+                totalRecaudado += pago?.monto || cuotaBase;
             } else {
                 // Si es el año actual y el mes ya transcurrió o es el actual
                 if (anioSeleccionado < currentYear || (anioSeleccionado === currentYear && m <= currentMonth)) {
@@ -81,7 +82,7 @@ export default function HistorialPagosModal({ alumno, isOpen, onClose }: Props) 
             mesesEvaluados,
             alDia,
         };
-    }, [pagosMap, anioSeleccionado, alumno.cuota, currentYear, currentMonth]);
+    }, [pagosMap, anioSeleccionado, alumno?.cuota, currentYear, currentMonth]);
 
     // Formatear fecha legible en español
     const formatearFecha = (isoString?: string) => {
@@ -101,6 +102,7 @@ export default function HistorialPagosModal({ alumno, isOpen, onClose }: Props) 
 
     // Registrar o alternar pago
     const handleMarcarPagadoRapido = (mes: number, anio: number) => {
+        if (!alumno) return;
         const monto = alumno.cuota || 0;
         const fechaActual = new Date().toISOString();
         registrarPago(alumno.id, mes, anio, monto, fechaActual);
@@ -109,6 +111,7 @@ export default function HistorialPagosModal({ alumno, isOpen, onClose }: Props) 
     };
 
     const handleMarcarPendiente = (mes: number, anio: number) => {
+        if (!alumno) return;
         marcarPendiente(alumno.id, mes, anio);
         showToast(`↩ Pago de ${MONTH_NAMES[mes - 1]} ${anio} marcado como pendiente`, 'info');
         addActivity('payment', `Pago deshecho a pendiente: ${alumno.nombre} - ${MONTH_NAMES[mes - 1]} ${anio}`);
@@ -117,6 +120,7 @@ export default function HistorialPagosModal({ alumno, isOpen, onClose }: Props) 
     // Guardar desde el formulario manual
     const handleGuardarPagoManual = (e: React.FormEvent) => {
         e.preventDefault();
+        if (!alumno) return;
         const montoNum = parseInt(formMonto) || alumno.cuota || 0;
         if (montoNum <= 0) {
             showToast('⚠️ Ingresá un monto válido mayor a 0', 'warning');
@@ -133,6 +137,7 @@ export default function HistorialPagosModal({ alumno, isOpen, onClose }: Props) 
 
     // Abrir formulario para un mes específico
     const abrirFormularioParaMes = (mes: number) => {
+        if (!alumno) return;
         setFormMes(mes);
         setFormAnio(anioSeleccionado);
         const pagoExistente = pagosMap.get(`${mes}-${anioSeleccionado}`);
@@ -147,10 +152,11 @@ export default function HistorialPagosModal({ alumno, isOpen, onClose }: Props) 
 
     // Lista de meses del año filtrados por búsqueda y estado
     const mesesVisualizables = useMemo(() => {
+        if (!alumno) return [];
         const items = [];
         for (let m = 1; m <= 12; m++) {
             const pago = pagosMap.get(`${m}-${anioSeleccionado}`);
-            const estaPagado = pago && pago.estado === 'pagado';
+            const estaPagado = Boolean(pago && pago.estado === 'pagado');
             const esPasadoOActual = anioSeleccionado < currentYear || (anioSeleccionado === currentYear && m <= currentMonth);
             const esFuturo = anioSeleccionado > currentYear || (anioSeleccionado === currentYear && m > currentMonth);
 
@@ -186,7 +192,7 @@ export default function HistorialPagosModal({ alumno, isOpen, onClose }: Props) 
             });
         }
         return items;
-    }, [pagosMap, anioSeleccionado, currentYear, currentMonth, filtroEstado, busqueda]);
+    }, [pagosMap, anioSeleccionado, currentYear, currentMonth, filtroEstado, busqueda, alumno]);
 
     // Historial cronológico completo de pagos realizados
     const historialPagosRealizados = useMemo(() => {
@@ -198,13 +204,18 @@ export default function HistorialPagosModal({ alumno, isOpen, onClose }: Props) 
             });
     }, [pagosAlumno]);
 
+    // Retorno condicional DEPUES de haber ejecutado todos los hooks de React
+    if (!isOpen || !alumno) {
+        return null;
+    }
+
     return (
         <div
             style={{
                 position: 'fixed',
                 inset: 0,
                 zIndex: 1000,
-                background: 'rgba(0,0,0,0.82)',
+                background: 'rgba(0,0,0,0.85)',
                 backdropFilter: 'blur(8px)',
                 display: 'flex',
                 alignItems: 'center',
@@ -275,12 +286,12 @@ export default function HistorialPagosModal({ alumno, isOpen, onClose }: Props) 
                                         fontWeight: 600,
                                     }}
                                 >
-                                    {esActivo ? '✅ Activo' : `⚠️ Situación: ${alumno.estado}`}
+                                    {esActivo ? '✅ Activo' : `⚠️ Situación: ${alumno.estado || 'activo'}`}
                                 </span>
                             </div>
                             <div style={{ fontSize: '0.85rem', color: 'rgba(134,239,172,0.7)', marginTop: 2, display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
                                 <span>📋 Plan: <strong>{alumno.plan === 'libre' ? 'Libre' : '3x Semana'}</strong></span>
-                                <span>💰 Cuota mensual: <strong>{formatCurrency(alumno.cuota)}</strong></span>
+                                <span>💰 Cuota mensual: <strong>{formatCurrency(alumno.cuota || 0)}</strong></span>
                                 <span>📱 +{alumno.whatsapp}</span>
                             </div>
                         </div>
@@ -326,7 +337,7 @@ export default function HistorialPagosModal({ alumno, isOpen, onClose }: Props) 
                     >
                         <span>ℹ️</span>
                         <span>
-                            Este alumno se encuentra actualmente en situación <strong>{alumno.estado.toUpperCase()}</strong>.
+                            Este alumno se encuentra actualmente en situación <strong>{(alumno.estado || '').toUpperCase()}</strong>.
                             El seguimiento activo de cuotas y recordatorios aplica a alumnos en situación <strong>"Activo"</strong>.
                         </span>
                     </div>
