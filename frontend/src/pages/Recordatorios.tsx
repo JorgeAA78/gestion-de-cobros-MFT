@@ -128,7 +128,7 @@ export default function Recordatorios() {
                 <p>Enviar recordatorios a alumnos que no pagaron — Solo se envía a quienes tienen cuota pendiente</p>
             </div>
 
-            <div className="form-container" style={{ maxWidth: 900 }}>
+            <div className="form-container" style={{ maxWidth: 900, width: '100%', margin: '0 auto', boxSizing: 'border-box' }}>
                 {/* Panel de progreso del envío en segundo plano */}
                 {sending && statusManual && (
                     <div className="card" style={{ borderLeft: '4px solid var(--accent-green)', background: 'rgba(34,197,94,0.03)', marginBottom: 'var(--space-md)' }}>
@@ -189,15 +189,17 @@ export default function Recordatorios() {
                         NO pagaron {MONTH_NAMES[mes - 1]}. Los que ya abonaron no recibirán el recordatorio.
                     </div>
 
-                    <div className="btn-reset-recordatorios-wrapper" style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 'var(--space-md)' }}>
+                    <div className="btn-reset-recordatorios-wrapper" style={{ display: 'flex', justifyContent: 'center', marginTop: 'var(--space-md)', width: '100%' }}>
                         <button
                             className="btn btn-danger"
                             style={{
                                 display: 'flex',
                                 alignItems: 'center',
+                                justifyContent: 'center',
                                 gap: '8px',
                                 fontSize: '0.85rem',
                                 padding: '8px 16px',
+                                width: '100%',
                             }}
                             disabled={sending}
                             onClick={handleResetHistory}
@@ -208,21 +210,23 @@ export default function Recordatorios() {
                 </div>
 
                 {/* Template */}
-                <div className="card mt-2">
+                <div className="card mt-2" style={{ overflow: 'hidden', width: '100%', boxSizing: 'border-box' }}>
                     <h3 className="section-title">💬 Vista Previa del Recordatorio</h3>
 
                     {sampleMsg && (
-                        <div className="message-preview">
-                            <div className="message-bubble">
-                                <p style={{ whiteSpace: 'pre-wrap' }}>{sampleMsg}</p>
-                                <div className="msg-time">12:00 ✓✓</div>
+                        <div className="message-preview-container">
+                            <div className="message-preview">
+                                <div className="message-bubble">
+                                    <p style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{sampleMsg}</p>
+                                    <div className="msg-time">12:00 ✓✓</div>
+                                </div>
                             </div>
                         </div>
                     )}
                 </div>
 
                 {/* List / Table */}
-                <div className="card mt-2">
+                <div className="card mt-2" style={{ width: '100%', boxSizing: 'border-box', overflow: 'hidden' }}>
                     <h3 className="section-title">
                         📋 Alumnos Pendientes de {MONTH_NAMES[mes - 1]} ({pendientes.length})
                     </h3>
@@ -252,10 +256,10 @@ export default function Recordatorios() {
 
                                 return (
                                     <div key={a.id} className="recordatorio-mobile-item">
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 6 }}>
-                                            <div style={{ minWidth: 0, flex: 1 }}>
-                                                <span style={{ fontSize: '0.75rem', color: 'rgba(134,239,172,0.5)', marginRight: 6 }}>#{i + 1}</span>
-                                                <strong style={{ fontSize: '0.92rem', color: '#f0fdf4', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                                            <div style={{ minWidth: 0, flex: '1 1 auto', display: 'flex', alignItems: 'center', gap: 6 }}>
+                                                <span style={{ fontSize: '0.75rem', color: 'rgba(134,239,172,0.5)', fontWeight: 600 }}>#{i + 1}</span>
+                                                <strong style={{ fontSize: '0.92rem', color: '#f0fdf4', wordBreak: 'break-word' }}>
                                                     {a.nombre}
                                                 </strong>
                                             </div>
@@ -263,13 +267,13 @@ export default function Recordatorios() {
                                                 <span className="badge" style={{ fontSize: '0.7rem', padding: '2px 6px' }}>
                                                     {a.plan === 'libre' ? '🔥 Libre' : '💪 3x'}
                                                 </span>
-                                                <span className="badge" style={{ fontSize: '0.7rem', padding: '2px 6px', background: 'rgba(34,197,94,0.15)', color: '#4ade80' }}>
+                                                <span className="badge" style={{ fontSize: '0.7rem', padding: '2px 6px', background: 'rgba(34,197,94,0.15)', color: '#4ade80', fontWeight: 700 }}>
                                                     {formatCurrency(a.cuota)}
                                                 </span>
                                             </div>
                                         </div>
 
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8, gap: 8, borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 6 }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8, gap: 8, borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 6, flexWrap: 'wrap' }}>
                                             <a
                                                 href={`https://wa.me/${a.whatsapp}`}
                                                 target="_blank"
@@ -282,7 +286,7 @@ export default function Recordatorios() {
                                             <button
                                                 type="button"
                                                 className={`badge ${displayStatus === 'manual_sent' || displayStatus === 'auto_sent' ? 'pagado' : displayStatus === 'error' ? 'vencido' : 'pendiente'}`}
-                                                style={{ cursor: sending || autoSent ? 'default' : 'pointer', border: 'none', padding: '4px 10px', fontSize: '0.72rem', flexShrink: 0 }}
+                                                style={{ cursor: sending || autoSent ? 'default' : 'pointer', border: 'none', padding: '4px 8px', fontSize: '0.72rem', flexShrink: 0 }}
                                                 title={autoSent ? 'Envío automático registrado' : 'Clic para alternar manual / pendiente'}
                                                 onClick={() => {
                                                     if (sending || autoSent) return;

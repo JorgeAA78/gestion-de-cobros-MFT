@@ -449,6 +449,9 @@ a:hover {
 /* Forms */
 .form-container {
   max-width: 720px;
+  width: 100%;
+  margin: 0 auto;
+  box-sizing: border-box;
   animation: fadeInUp 0.6s ease both;
 }
 
@@ -861,13 +864,23 @@ a:hover {
 }
 
 /* Message preview */
+.message-preview-container {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: var(--space-md) auto 0 auto;
+}
+
 .message-preview {
   background: #075e54;
   border-radius: var(--radius-lg);
   padding: var(--space-lg);
-  margin-top: var(--space-lg);
+  margin: var(--space-lg) auto 0 auto;
   position: relative;
   max-width: 400px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .message-preview::before {
@@ -889,6 +902,9 @@ a:hover {
   font-size: 0.9rem;
   line-height: 1.5;
   word-wrap: break-word;
+  word-break: break-word;
+  box-sizing: border-box;
+  width: 100%;
 }
 
 .msg-time {
@@ -2712,6 +2728,31 @@ a:hover {
   }
 
   /* Recordatorios y vistas previas en móviles */
+  .main-content {
+    margin-left: 0 !important;
+    padding: 8px 8px 90px 8px !important;
+    max-width: 100vw !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .form-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 auto !important;
+    box-sizing: border-box !important;
+  }
+
+  .card {
+    padding: 12px !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+  }
+
   .btn-reset-recordatorios-wrapper {
     width: 100% !important;
   }
@@ -2722,17 +2763,42 @@ a:hover {
     text-align: center !important;
   }
 
-  .message-preview {
-    padding: 12px 14px !important;
-    max-width: 100% !important;
+  .message-preview-container {
     width: 100% !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    margin: 8px auto 0 auto !important;
+    box-sizing: border-box !important;
+  }
+
+  .message-preview {
+    padding: 10px 12px !important;
+    max-width: 360px !important;
+    width: 100% !important;
+    margin: 0 auto !important;
     box-sizing: border-box !important;
   }
 
   .message-bubble {
     padding: 8px 10px !important;
-    font-size: 0.84rem !important;
+    font-size: 0.82rem !important;
     box-sizing: border-box !important;
     width: 100% !important;
+    word-break: break-word !important;
+  }
+
+  .recordatorios-mobile-list {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .recordatorio-mobile-item {
+    padding: 8px 10px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
   }
 }
