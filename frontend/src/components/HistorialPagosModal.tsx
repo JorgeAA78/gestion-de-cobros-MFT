@@ -220,89 +220,66 @@ export default function HistorialPagosModal({ alumno, isOpen, onClose }: Props) 
 
     return (
         <div
-            style={{
-                position: 'fixed',
-                inset: 0,
-                zIndex: 1000,
-                background: 'rgba(0,0,0,0.85)',
-                backdropFilter: 'blur(8px)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: 'var(--space-md)',
-                animation: 'fadeInUp 0.2s ease',
-            }}
+            className="historial-modal-backdrop"
             onClick={(e) => {
                 if (e.target === e.currentTarget) onClose();
             }}
         >
-            <div
-                style={{
-                    background: '#0d1610',
-                    border: '1px solid rgba(34, 197, 94, 0.25)',
-                    borderRadius: 'var(--radius-lg)',
-                    width: '100%',
-                    maxWidth: 860,
-                    maxHeight: '92vh',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    boxShadow: '0 25px 70px rgba(0,0,0,0.85), 0 0 30px rgba(34,197,94,0.1)',
-                    overflow: 'hidden',
-                }}
-            >
+            <div className="historial-modal-content">
                 {/* ─── Encabezado del Modal ─── */}
-                <div
-                    style={{
-                        padding: '1.25rem 1.5rem',
-                        borderBottom: '1px solid rgba(34, 197, 94, 0.15)',
-                        background: 'linear-gradient(180deg, rgba(34,197,94,0.08) 0%, transparent 100%)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        flexWrap: 'wrap',
-                        gap: '0.75rem',
-                    }}
-                >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                <div className="historial-modal-header">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flex: 1, minWidth: 0 }}>
                         <div
                             style={{
                                 width: 44,
                                 height: 44,
+                                minWidth: 44,
                                 borderRadius: 12,
                                 background: 'rgba(34,197,94,0.15)',
                                 border: '1px solid rgba(34,197,94,0.3)',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                fontSize: '1.5rem',
+                                fontSize: '1.4rem',
                             }}
                         >
                             🥋
                         </div>
-                        <div>
+                        <div style={{ minWidth: 0, flex: 1 }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                                <h2 style={{ fontSize: '1.25rem', margin: 0, color: '#f0fdf4', fontWeight: 700 }}>
+                                <h2 style={{ fontSize: '1.15rem', margin: 0, color: '#f0fdf4', fontWeight: 700, wordBreak: 'break-word' }}>
                                     {alumno.nombre}
                                 </h2>
                                 <span
                                     style={{
-                                        fontSize: '0.75rem',
+                                        fontSize: '0.72rem',
                                         padding: '2px 8px',
                                         borderRadius: 6,
                                         background: esActivo ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)',
                                         color: esActivo ? '#4ade80' : '#f87171',
                                         border: `1px solid ${esActivo ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)'}`,
                                         fontWeight: 600,
+                                        whiteSpace: 'nowrap',
                                     }}
                                 >
-                                    {esActivo ? '✅ Activo' : `⚠️ Situación: ${alumno.estado || 'activo'}`}
+                                    {esActivo ? '✅ Activo' : `⚠️ ${alumno.estado || 'activo'}`}
                                 </span>
                             </div>
-                            <div style={{ fontSize: '0.85rem', color: 'rgba(134,239,172,0.7)', marginTop: 2, display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-                                <span>📋 Plan: <strong>{alumno.plan === 'libre' ? 'Libre' : '3x Semana'}</strong></span>
-                                <span>💰 Cuota mensual: <strong>{formatCurrency(alumno.cuota || 0)}</strong></span>
+                            <div
+                                className="historial-meta-row"
+                                style={{
+                                    fontSize: '0.8rem',
+                                    color: 'rgba(134,239,172,0.7)',
+                                    marginTop: 4,
+                                    display: 'flex',
+                                    gap: '0.5rem 1rem',
+                                    flexWrap: 'wrap',
+                                }}
+                            >
+                                <span>📋 Plan: <strong style={{ color: '#86efac' }}>{alumno.plan === 'libre' ? 'Libre' : '3x Sem.'}</strong></span>
+                                <span>💰 Cuota: <strong style={{ color: '#4ade80' }}>{formatCurrency(alumno.cuota || 0)}</strong></span>
                                 <span>📱 +{alumno.whatsapp}</span>
-                                <span>📅 Fecha de Alta: <strong style={{ color: '#4ade80' }}>{formatearFecha(alumno.fechaRegistro)}</strong></span>
+                                <span>📅 Alta: <strong style={{ color: '#4ade80' }}>{formatearFecha(alumno.fechaRegistro)}</strong></span>
                             </div>
                         </div>
                     </div>
@@ -318,6 +295,7 @@ export default function HistorialPagosModal({ alumno, isOpen, onClose }: Props) 
                             cursor: 'pointer',
                             width: 34,
                             height: 34,
+                            minWidth: 34,
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
@@ -354,24 +332,24 @@ export default function HistorialPagosModal({ alumno, isOpen, onClose }: Props) 
                 )}
 
                 {/* ─── Contenido Scrollable ─── */}
-                <div style={{ padding: '1.25rem 1.5rem', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                <div className="historial-modal-body">
                     {/* Barra de control superior: Selector de Año + Resumen Anual */}
                     <div
                         style={{
                             background: 'rgba(255,255,255,0.02)',
                             border: '1px solid rgba(34,197,94,0.12)',
                             borderRadius: 'var(--radius-md)',
-                            padding: '1rem',
+                            padding: '0.85rem',
                             display: 'flex',
                             flexDirection: 'column',
-                            gap: '1rem',
+                            gap: '0.75rem',
                         }}
                     >
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
                             {/* Selector de Año */}
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                <span style={{ fontSize: '0.9rem', color: 'rgba(134,239,172,0.8)', fontWeight: 600 }}>
-                                    📅 Año a consultar:
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                <span style={{ fontSize: '0.85rem', color: 'rgba(134,239,172,0.8)', fontWeight: 600 }}>
+                                    📅 Año:
                                 </span>
                                 <div style={{ display: 'flex', alignItems: 'center', background: '#080c08', borderRadius: 8, border: '1px solid rgba(34,197,94,0.2)' }}>
                                     <button
@@ -390,7 +368,7 @@ export default function HistorialPagosModal({ alumno, isOpen, onClose }: Props) 
                                     >
                                         ◀
                                     </button>
-                                    <span style={{ padding: '4px 12px', fontWeight: 700, color: '#f0fdf4', fontSize: '1.05rem', minWidth: 60, textAlign: 'center' }}>
+                                    <span style={{ padding: '4px 12px', fontWeight: 700, color: '#f0fdf4', fontSize: '1rem', minWidth: 50, textAlign: 'center' }}>
                                         {anioSeleccionado}
                                     </span>
                                     <button
@@ -415,9 +393,9 @@ export default function HistorialPagosModal({ alumno, isOpen, onClose }: Props) 
                                         type="button"
                                         onClick={() => setAnioSeleccionado(currentYear)}
                                         className="btn btn-secondary"
-                                        style={{ padding: '3px 8px', fontSize: '0.75rem' }}
+                                        style={{ padding: '3px 8px', fontSize: '0.72rem' }}
                                     >
-                                        Ir al actual ({currentYear})
+                                        Actual ({currentYear})
                                     </button>
                                 )}
                             </div>
@@ -432,9 +410,9 @@ export default function HistorialPagosModal({ alumno, isOpen, onClose }: Props) 
                                         style={{
                                             display: 'flex',
                                             alignItems: 'center',
-                                            gap: 6,
-                                            fontSize: '0.82rem',
-                                            padding: '6px 12px',
+                                            gap: 4,
+                                            fontSize: '0.78rem',
+                                            padding: '5px 10px',
                                             background: 'rgba(59,130,246,0.12)',
                                             color: '#60a5fa',
                                             borderColor: 'rgba(59,130,246,0.3)',
@@ -442,7 +420,7 @@ export default function HistorialPagosModal({ alumno, isOpen, onClose }: Props) 
                                         }}
                                         title="Marcar Enero, Febrero, Marzo y Abril 2026 como pagados"
                                     >
-                                        ⚡ Marcar Ene-Abr Pagados
+                                        ⚡ Ene-Abr Pagados
                                     </button>
                                 )}
                                 <button
@@ -456,24 +434,18 @@ export default function HistorialPagosModal({ alumno, isOpen, onClose }: Props) 
                                     style={{
                                         display: 'flex',
                                         alignItems: 'center',
-                                        gap: 6,
-                                        fontSize: '0.85rem',
-                                        padding: '6px 14px',
+                                        gap: 4,
+                                        fontSize: '0.8rem',
+                                        padding: '5px 12px',
                                     }}
                                 >
-                                    <span>{mostrarFormNuevo ? '✕ Cerrar Formulario' : '➕ Registrar Pago Histórico'}</span>
+                                    <span>{mostrarFormNuevo ? '✕ Cerrar' : '➕ Pago Histórico'}</span>
                                 </button>
                             </div>
                         </div>
 
                         {/* Tarjetas de Métricas del Año */}
-                        <div
-                            style={{
-                                display: 'grid',
-                                gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))',
-                                gap: '0.75rem',
-                            }}
-                        >
+                        <div className="historial-stats-boxes">
                             <div
                                 style={{
                                     background: 'rgba(34,197,94,0.08)',
@@ -721,13 +693,7 @@ export default function HistorialPagosModal({ alumno, isOpen, onClose }: Props) 
                                 No se encontraron cuotas con los filtros aplicados.
                             </div>
                         ) : (
-                            <div
-                                style={{
-                                    display: 'grid',
-                                    gridTemplateColumns: 'repeat(auto-fill, minmax(185px, 1fr))',
-                                    gap: '0.75rem',
-                                }}
-                            >
+                            <div className="historial-meses-grid">
                                 {mesesVisualizables.map((item) => {
                                     const { mes, nombreMes, pago, estaPagado, esFuturo } = item;
                                     const esMesActual = anioSeleccionado === currentYear && mes === currentMonth;
@@ -735,6 +701,7 @@ export default function HistorialPagosModal({ alumno, isOpen, onClose }: Props) 
                                     return (
                                         <div
                                             key={mes}
+                                            className="historial-mes-card"
                                             style={{
                                                 background: estaPagado
                                                     ? 'rgba(34, 197, 94, 0.08)'

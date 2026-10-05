@@ -1288,27 +1288,42 @@ a:hover {
   }
 
   .stats-grid {
-    grid-template-columns: 1fr;
-    gap: var(--space-sm);
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
   }
 
   .stat-card {
-    padding: var(--space-md);
-    gap: var(--space-md);
+    padding: 10px 12px;
+    gap: 8px;
+    border-radius: 12px;
   }
 
   .stat-icon {
-    width: 40px;
-    height: 40px;
+    width: 36px;
+    height: 36px;
     font-size: 1.1rem;
+    border-radius: 10px;
+    flex-shrink: 0;
   }
 
   .stat-info h3 {
-    font-size: 1.3rem;
+    font-size: 1.25rem !important;
+    line-height: 1.2;
+    margin-bottom: 2px;
   }
 
   .stat-info p {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
+    color: rgba(134, 239, 172, 0.65);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .stat-trend {
+    font-size: 0.65rem;
+    padding: 1px 4px;
+    margin-top: 2px;
   }
 
   .quick-actions {
@@ -2213,4 +2228,346 @@ a:hover {
   font-family: 'Montserrat', sans-serif;
   font-weight: 700;
   text-shadow: 0 0 10px rgba(34, 197, 94, 0.1);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   OPTIMIZACIONES MOBILE UI / UX (Mutantes Fight Team)
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+/* Ocultar en móvil columnas redundantes de tabla */
+@media (max-width: 768px) {
+  .col-hide-mobile {
+    display: none !important;
+  }
+
+  .history-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+  }
+
+  .history-card-item {
+    padding: 10px 12px !important;
+  }
+
+  .history-card-item .history-amount {
+    font-size: 1.1rem !important;
+  }
+}
+
+/* Banner de Recordatorios en Dashboard */
+.dashboard-reminder-banner {
+  border-left: 3px solid #f59e0b !important;
+  margin-bottom: var(--space-xl) !important;
+  animation: fadeInUp 0.4s ease;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(8, 12, 8, 0.95) 100%) !important;
+  border: 1px solid rgba(245, 158, 11, 0.3) !important;
+  border-left-width: 4px !important;
+}
+
+@media (max-width: 640px) {
+  .dashboard-reminder-banner {
+    padding: 12px 14px !important;
+    margin-bottom: var(--space-md) !important;
+  }
+
+  .dashboard-reminder-banner h3 {
+    font-size: 0.92rem !important;
+    margin-bottom: 2px !important;
+  }
+
+  .dashboard-reminder-banner p {
+    font-size: 0.75rem !important;
+  }
+
+  .dashboard-reminder-actions {
+    width: 100%;
+    display: flex;
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  .dashboard-reminder-actions .btn {
+    flex: 1;
+    text-align: center;
+    justify-content: center;
+    padding: 6px 10px;
+    font-size: 0.78rem;
+  }
+}
+
+/* Selector de vista: Tarjetas vs Tabla */
+.view-mode-toggle {
+  display: inline-flex;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 3px;
+  border-radius: 8px;
+  border: 1px solid rgba(34, 197, 94, 0.2);
+}
+
+.view-mode-toggle button {
+  background: transparent;
+  border: none;
+  color: rgba(134, 239, 172, 0.6);
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s ease;
+}
+
+.view-mode-toggle button.active {
+  background: rgba(34, 197, 94, 0.25);
+  color: #4ade80;
+  font-weight: 700;
+  box-shadow: 0 0 10px rgba(34, 197, 94, 0.15);
+}
+
+/* Contenedor de Tarjetas Móviles de Alumnos */
+.alumnos-mobile-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.alumno-mobile-card {
+  background: rgba(13, 22, 16, 0.9);
+  border: 1px solid rgba(34, 197, 94, 0.2);
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: all 0.2s ease;
+  position: relative;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+}
+
+.alumno-mobile-card.selected {
+  background: rgba(34, 197, 94, 0.12);
+  border-color: rgba(34, 197, 94, 0.6);
+}
+
+.alumno-mobile-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.alumno-mobile-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.alumno-mobile-name {
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: #f0fdf4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.alumno-mobile-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+}
+
+.alumno-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  padding: 2px 7px;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.alumno-chip.plan {
+  color: #86efac;
+  border-color: rgba(34, 197, 94, 0.25);
+  background: rgba(34, 197, 94, 0.08);
+}
+
+.alumno-chip.alta {
+  color: rgba(134, 239, 172, 0.7);
+  font-size: 0.72rem;
+}
+
+.alumno-chip.debt {
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.35);
+  color: #fbbf24;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.alumno-chip.al-dia {
+  background: rgba(34, 197, 94, 0.12);
+  border-color: rgba(34, 197, 94, 0.3);
+  color: #4ade80;
+  cursor: pointer;
+}
+
+.alumno-mobile-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.alumno-mobile-actions .btn-pay {
+  flex: 1;
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  justify-content: center;
+}
+
+.alumno-mobile-actions .btn-tool {
+  padding: 6px 10px;
+  font-size: 0.82rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  height: 34px;
+}
+
+/* Modal de Historial de Pagos Responsivo */
+.historial-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-md);
+  animation: fadeIn 0.2s ease;
+}
+
+.historial-modal-content {
+  background: #0d1610;
+  border: 1px solid rgba(34, 197, 94, 0.25);
+  border-radius: var(--radius-lg);
+  width: 100%;
+  max-width: 860px;
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 25px 70px rgba(0, 0, 0, 0.85), 0 0 30px rgba(34, 197, 94, 0.1);
+  overflow: hidden;
+}
+
+.historial-modal-header {
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid rgba(34, 197, 94, 0.15);
+  background: linear-gradient(180deg, rgba(34, 197, 94, 0.08) 0%, transparent 100%);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.historial-modal-body {
+  padding: 1.25rem 1.5rem;
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.historial-stats-boxes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.75rem;
+}
+
+.historial-meses-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 0.75rem;
+}
+
+.historial-mes-card {
+  border-radius: 10px;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-width: 0;
+  word-break: break-word;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+@media (max-width: 640px) {
+  .historial-modal-backdrop {
+    padding: 8px !important;
+  }
+
+  .historial-modal-content {
+    width: 98vw !important;
+    max-width: 98vw !important;
+    max-height: 96vh !important;
+    border-radius: 14px !important;
+  }
+
+  .historial-modal-header {
+    padding: 10px 12px !important;
+  }
+
+  .historial-modal-body {
+    padding: 10px 12px !important;
+    gap: 10px !important;
+  }
+
+  .historial-stats-boxes {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 6px !important;
+  }
+
+  .historial-stats-boxes > div:last-child {
+    grid-column: span 2;
+  }
+
+  .historial-meses-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 6px !important;
+  }
+
+  .historial-mes-card {
+    padding: 8px 9px !important;
+  }
+
+  .historial-mes-card strong {
+    font-size: 0.85rem !important;
+  }
+
+  .historial-mes-card .btn {
+    padding: 4px 6px !important;
+    font-size: 0.7rem !important;
+  }
+
+  .historial-meta-row {
+    font-size: 0.74rem !important;
+    gap: 4px 8px !important;
+  }
 }

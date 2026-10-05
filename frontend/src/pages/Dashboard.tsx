@@ -76,6 +76,9 @@ export default function Dashboard() {
     const [busqueda, setBusqueda] = useState('');
     const [seleccionados, setSeleccionados] = useState<string[]>([]);
     const [tabSituacion, setTabSituacion] = useState<'todos' | EstadoAlumno>('activo');
+    const [vistaModo, setVistaModo] = useState<'tarjetas' | 'tabla'>(() => {
+        return typeof window !== 'undefined' && window.innerWidth <= 768 ? 'tarjetas' : 'tabla';
+    });
 
     // ── Modal de Historial de Pagos ──────────────────────────
     const [alumnoHistorial, setAlumnoHistorial] = useState<Alumno | null>(null);
@@ -229,23 +232,19 @@ export default function Dashboard() {
 
             {/* Auto-reminder Banner */}
             {reminder && (
-                <div className="card" style={{
-                    borderLeft: '3px solid #f59e0b',
-                    marginBottom: 'var(--space-xl)',
-                    animation: 'fadeInUp 0.5s ease',
-                }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
+                <div className="card dashboard-reminder-banner">
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
                         <div>
-                            <h3 style={{ color: '#f59e0b', marginBottom: 4 }}>
+                            <h3 style={{ color: '#f59e0b', marginBottom: 2 }}>
                                 🔔 Hay {pendientes.length} alumnos sin pagar {MONTH_NAMES[mes - 1]}
                             </h3>
-                            <p style={{ fontSize: '0.9rem', color: 'rgba(134,239,172,0.5)' }}>
+                            <p style={{ fontSize: '0.82rem', color: 'rgba(134,239,172,0.6)' }}>
                                 El día de envío configurado es el {config.diaEnvio} de cada mes
                             </p>
                         </div>
-                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <div className="dashboard-reminder-actions">
                             <a href="#/recordatorios" className="btn btn-primary">
-                                📱 Enviar Recordatorios
+                                📱 Recordatorios
                             </a>
                             <button className="btn btn-secondary" onClick={() => setReminder(false)}>
                                 Cerrar
@@ -349,15 +348,37 @@ export default function Dashboard() {
                             </button>
                         )}
                     </div>
-                    <div style={{ position: 'relative', minWidth: 220 }}>
-                        <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', opacity: 0.5 }}>🔍</span>
-                        <input
-                            className="form-input"
-                            style={{ paddingLeft: 34, margin: 0 }}
-                            placeholder="Buscar alumno..."
-                            value={busqueda}
-                            onChange={(e) => setBusqueda(e.target.value)}
-                        />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+                        {/* Selector de modo de vista: Tarjetas móviles vs Tabla */}
+                        <div className="view-mode-toggle">
+                            <button
+                                type="button"
+                                className={vistaModo === 'tarjetas' ? 'active' : ''}
+                                onClick={() => setVistaModo('tarjetas')}
+                                title="Vista rápida en tarjetas para móvil"
+                            >
+                                📱 Tarjetas
+                            </button>
+                            <button
+                                type="button"
+                                className={vistaModo === 'tabla' ? 'active' : ''}
+                                onClick={() => setVistaModo('tabla')}
+                                title="Vista completa en tabla clásica"
+                            >
+                                📄 Tabla
+                            </button>
+                        </div>
+
+                        <div style={{ position: 'relative', minWidth: 190 }}>
+                            <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', opacity: 0.5 }}>🔍</span>
+                            <input
+                                className="form-input"
+                                style={{ paddingLeft: 34, margin: 0, width: '100%' }}
+                                placeholder="Buscar alumno..."
+                                value={busqueda}
+                                onChange={(e) => setBusqueda(e.target.value)}
+                            />
+                        </div>
                     </div>
                 </div>
 
@@ -410,30 +431,190 @@ export default function Dashboard() {
                     </button>
                 </div>
 
-                <div style={{ overflowX: 'auto' }}>
-                    <table className="preview-table">
-                        <thead>
-                            <tr>
-                                <th style={{ width: 40, textAlign: 'center' }}>
-                                    <input 
-                                        type="checkbox" 
-                                        checked={todosSeleccionados}
-                                        onChange={toggleTodos}
-                                        title="Seleccionar todos"
-                                        style={{ cursor: 'pointer', width: 16, height: 16 }}
-                                    />
-                                </th>
-                                <th>Nombre</th>
-                                <th>Fecha Alta</th>
-                                <th>Plan</th>
-                                <th>WhatsApp</th>
-                                <th>Cuota</th>
-                                <th>Día Vcto.</th>
-                                <th>Estado {MONTH_NAMES[mes - 1]}</th>
-                                <th>Situación</th>
-                                <th>Acción</th>
-                            </tr>
-                        </thead>
+                {/* ── Vista en Tarjetas para Móviles ── */}
+                {vistaModo === 'tarjetas' ? (
+                    <div className="alumnos-mobile-container">
+                        {filteredAlumnos.length === 0 ? (
+                            <div style={{ textAlign: 'center', color: 'var(--text-dim)', padding: 'var(--space-xl)' }}>
+                                No hay alumnos registrados con el filtro seleccionado.
+                            </div>
+                        ) : (
+                            filteredAlumnos.map((a) => {
+                                const estadoPago = getEstadoPago(a.id);
+                                const isSelected = seleccionados.includes(a.id);
+                                const estadoAlumno = a.estado || 'activo';
+                                const esActivo = estadoAlumno === 'activo';
+                                const resumenAnual = esActivo ? getResumenAnualAlumno(a.id) : null;
+                                const fechaAltaFormatted = a.fechaRegistro
+                                    ? new Date(a.fechaRegistro).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+                                    : null;
+
+                                return (
+                                    <div key={a.id} className={`alumno-mobile-card ${isSelected ? 'selected' : ''}`}>
+                                        {/* Header de la tarjeta: Checkbox + Nombre + Badge de Pago */}
+                                        <div className="alumno-mobile-card-header">
+                                            <div className="alumno-mobile-name-row">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={isSelected}
+                                                    onChange={() => toggleSeleccion(a.id)}
+                                                    style={{ width: 18, height: 18, cursor: 'pointer' }}
+                                                    title="Seleccionar alumno"
+                                                />
+                                                <span
+                                                    className="alumno-mobile-name"
+                                                    onClick={() => openEdit(a)}
+                                                    style={{ cursor: 'pointer' }}
+                                                    title="Click para editar alumno"
+                                                >
+                                                    {a.nombre}
+                                                </span>
+                                            </div>
+                                            <span className={`badge ${estadoPago}`} style={{ fontSize: '0.72rem', padding: '2px 8px' }}>
+                                                {estadoPago === 'pagado' ? '✓ Pagado' : estadoPago === 'vencido' ? '✗ Vencido' : '⏳ Pendiente'}
+                                            </span>
+                                        </div>
+
+                                        {/* Chips: Plan, Cuota, Alta, Situación */}
+                                        <div className="alumno-mobile-chips">
+                                            <span className="alumno-chip plan">
+                                                {a.plan === 'libre' ? '🔥 Libre' : '💪 3x Sem.'}
+                                            </span>
+                                            <span className="alumno-chip">
+                                                💰 <strong>{formatCurrency(a.cuota)}</strong> (día {a.diaVencimiento ?? config.diaEnvio ?? 5})
+                                            </span>
+                                            {fechaAltaFormatted && (
+                                                <span className="alumno-chip alta" title="Fecha en que se dio de alta">
+                                                    📅 Alta: {fechaAltaFormatted}
+                                                </span>
+                                            )}
+                                            <select
+                                                className="form-select"
+                                                value={estadoAlumno}
+                                                onChange={(e) => updateAlumno(a.id, { estado: e.target.value as EstadoAlumno })}
+                                                style={{
+                                                    padding: '2px 6px',
+                                                    fontSize: '0.72rem',
+                                                    borderRadius: 6,
+                                                    background: estadoAlumno === 'activo' ? 'rgba(34,197,94,0.1)' : 'rgba(245,158,11,0.1)',
+                                                    borderColor: estadoAlumno === 'activo' ? 'rgba(34,197,94,0.3)' : 'rgba(245,158,11,0.3)',
+                                                    color: estadoAlumno === 'activo' ? '#4ade80' : '#fbbf24',
+                                                }}
+                                            >
+                                                {Object.entries(ESTADO_LABELS).map(([val, lab]) => (
+                                                    <option key={val} value={val}>{lab}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+
+                                        {/* Resumen Anual de Cuotas (Clickable para abrir Historial) */}
+                                        {esActivo && resumenAnual && (
+                                            <div>
+                                                <span
+                                                    className={`alumno-chip ${resumenAnual.alDia ? 'al-dia' : 'debt'}`}
+                                                    onClick={() => openHistorial(a)}
+                                                    title="Click para ver el historial detallado de pagos"
+                                                    style={{ fontSize: '0.74rem', width: '100%', justifyContent: 'space-between', padding: '4px 8px' }}
+                                                >
+                                                    <span>
+                                                        {resumenAnual.alDia
+                                                            ? `✓ Al día (${resumenAnual.mesesPagadosCount}/${resumenAnual.mesesEvaluados} meses)`
+                                                            : `⚠️ Adeuda ${resumenAnual.pendientesEnElAnio} ${resumenAnual.pendientesEnElAnio === 1 ? 'cuota' : 'cuotas'} (${resumenAnual.mesesPagadosCount}/${resumenAnual.mesesEvaluados} pagadas)`}
+                                                    </span>
+                                                    <span style={{ opacity: 0.75 }}>Ver meses →</span>
+                                                </span>
+                                            </div>
+                                        )}
+
+                                        {/* Acciones directas para móvil con 1 toque */}
+                                        <div className="alumno-mobile-actions">
+                                            {estadoPago !== 'pagado' ? (
+                                                <button
+                                                    className="btn btn-success btn-pay"
+                                                    onClick={() => marcarPagado(a.id, mes, anio)}
+                                                >
+                                                    ✓ Marcar Pagó
+                                                </button>
+                                            ) : (
+                                                <button
+                                                    className="btn btn-secondary btn-pay"
+                                                    onClick={() => marcarPendiente(a.id, mes, anio)}
+                                                >
+                                                    ↩ Deshacer
+                                                </button>
+                                            )}
+                                            {esActivo && (
+                                                <button
+                                                    className="btn btn-secondary btn-tool"
+                                                    style={{ background: 'rgba(34,197,94,0.12)', color: '#4ade80', borderColor: 'rgba(34,197,94,0.3)' }}
+                                                    onClick={() => openHistorial(a)}
+                                                    title="Historial de cuotas"
+                                                >
+                                                    📜
+                                                </button>
+                                            )}
+                                            <a
+                                                href={`https://wa.me/${a.whatsapp}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="btn btn-secondary btn-tool"
+                                                style={{ background: 'rgba(37,211,102,0.12)', color: '#25D366', borderColor: 'rgba(37,211,102,0.3)' }}
+                                                title="Enviar WhatsApp"
+                                            >
+                                                💬
+                                            </a>
+                                            <button
+                                                className="btn btn-secondary btn-tool"
+                                                style={{ background: 'rgba(59,130,246,0.12)', color: '#60a5fa', borderColor: 'rgba(59,130,246,0.3)' }}
+                                                onClick={() => openEdit(a)}
+                                                title="Editar alumno"
+                                            >
+                                                ✏️
+                                            </button>
+                                            <button
+                                                className="btn btn-secondary btn-tool"
+                                                style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444', borderColor: 'rgba(239,68,68,0.3)' }}
+                                                onClick={() => {
+                                                    if (window.confirm(`¿Estás seguro de eliminar a ${a.nombre}?`)) {
+                                                        removeAlumno(a.id);
+                                                    }
+                                                }}
+                                                title="Eliminar alumno"
+                                            >
+                                                🗑️
+                                            </button>
+                                        </div>
+                                    </div>
+                                );
+                            })
+                        )}
+                    </div>
+                ) : (
+                    /* ── Vista Clásica en Tabla Completa ── */
+                    <div style={{ overflowX: 'auto' }}>
+                        <table className="preview-table">
+                            <thead>
+                                <tr>
+                                    <th style={{ width: 40, textAlign: 'center' }}>
+                                        <input 
+                                            type="checkbox" 
+                                            checked={todosSeleccionados}
+                                            onChange={toggleTodos}
+                                            title="Seleccionar todos"
+                                            style={{ cursor: 'pointer', width: 16, height: 16 }}
+                                        />
+                                    </th>
+                                    <th>Nombre</th>
+                                    <th className="col-hide-mobile">Fecha Alta</th>
+                                    <th>Plan</th>
+                                    <th>WhatsApp</th>
+                                    <th>Cuota</th>
+                                    <th>Día Vcto.</th>
+                                    <th>Estado {MONTH_NAMES[mes - 1]}</th>
+                                    <th>Situación</th>
+                                    <th>Acción</th>
+                                </tr>
+                            </thead>
                         <tbody>
                             {filteredAlumnos.length === 0 ? (
                                 <tr>
@@ -489,7 +670,7 @@ export default function Dashboard() {
                                                 </div>
                                             )}
                                         </td>
-                                        <td>
+                                        <td className="col-hide-mobile">
                                             <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.75)', whiteSpace: 'nowrap' }} title="Fecha en que se dio de alta al alumno">
                                                 {a.fechaRegistro ? (
                                                     new Date(a.fechaRegistro).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })
@@ -591,6 +772,7 @@ export default function Dashboard() {
                         </tbody>
                     </table>
                 </div>
+            )}
             </div>
 
             {/* Activity */}
