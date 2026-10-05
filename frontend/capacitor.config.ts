@@ -5,6 +5,8 @@ const config: CapacitorConfig = {
   appName: 'Cobros MFT',
   webDir: 'dist',
   server: {
+    url: 'https://gestion-de-cobros-mft-production.up.railway.app',
+    cleartext: false,
     androidScheme: 'https'
   }
 };
