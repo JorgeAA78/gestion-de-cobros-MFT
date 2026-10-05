@@ -45,8 +45,9 @@ export default function Login() {
                 setAuth(response.token, response.admin);
                 navigate('/');
             }
-        } catch (err) {
-            setError('Error de conexión. Intenta nuevamente.');
+        } catch (err: any) {
+            console.error('Error de login:', err);
+            setError(`Error de conexión: ${err?.message || 'No se pudo conectar con el servidor'}. Verifica tu conexión a internet.`);
         } finally {
             setLoading(false);
         }

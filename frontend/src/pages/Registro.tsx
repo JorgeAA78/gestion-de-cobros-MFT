@@ -92,8 +92,9 @@ export default function Registro() {
             // Redirigir a verificación
             navigate(`/verificar?email=${encodeURIComponent(formData.email)}`);
             
-        } catch (err) {
-            setError('Error de conexión. Intenta nuevamente.');
+        } catch (err: any) {
+            console.error('Error de registro:', err);
+            setError(`Error de conexión: ${err?.message || 'No se pudo conectar con el servidor'}.`);
         } finally {
             setLoading(false);
         }

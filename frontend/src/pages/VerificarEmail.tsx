@@ -94,8 +94,9 @@ export default function VerificarEmail() {
             setSuccess('¡Email verificado! Redirigiendo...');
             setTimeout(() => navigate('/login'), 2000);
             
-        } catch (err) {
-            setError('Error de conexión. Intenta nuevamente.');
+        } catch (err: any) {
+            console.error('Error de verificación:', err);
+            setError(`Error de conexión: ${err?.message || 'No se pudo conectar con el servidor'}.`);
         } finally {
             setLoading(false);
         }
