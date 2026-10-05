@@ -25,10 +25,10 @@ jobs:
         with:
           version: 10
 
-      - name: 🟢 Configurar Node.js 20
+      - name: 🟢 Configurar Node.js 22
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'pnpm'
 
       - name: 📥 Instalar dependencias del proyecto
