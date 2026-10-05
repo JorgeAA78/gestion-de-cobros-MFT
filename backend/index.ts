@@ -498,9 +498,9 @@ app.post('/api/alumnos/delete-bulk', authMiddleware, async (req, res) => {
 // POST pago
 app.post('/api/pagos', authMiddleware, async (req, res) => {
     try {
-        const { alumnoId, mes, anio, estado, monto } = req.body;
+        const { alumnoId, mes, anio, estado, monto, fechaPago } = req.body;
         if (estado === 'pagado') {
-            await marcarPagado(alumnoId, mes, anio, monto);
+            await marcarPagado(alumnoId, mes, anio, monto, fechaPago);
         } else {
             await marcarPendiente(alumnoId, mes, anio);
         }

@@ -3,6 +3,7 @@ import { MONTH_NAMES, ESTADO_LABELS, type EstadoAlumno, type Alumno } from '../t
 import { formatCurrency, formatWhatsApp, sanitizeInput } from '../services/ycloud';
 import { useState, useEffect, useMemo } from 'react';
 import { showToast } from '../components/Toast';
+import HistorialPagosModal from '../components/HistorialPagosModal';
 
 function timeAgo(iso: string) {
     const ms = Date.now() - new Date(iso).getTime();
@@ -74,6 +75,21 @@ export default function Dashboard() {
 
     const [busqueda, setBusqueda] = useState('');
     const [seleccionados, setSeleccionados] = useState<string[]>([]);
+    const [tabSituacion, setTabSituacion] = useState<'todos' | EstadoAlumno>('activo');
+
+    // ── Modal de Historial de Pagos ──────────────────────────
+    const [alumnoHistorial, setAlumnoHistorial] = useState<Alumno | null>(null);
+    const [isHistorialOpen, setIsHistorialOpen] = useState(false);
+
+    const openHistorial = (a: Alumno) => {
+        setAlumnoHistorial(a);
+        setIsHistorialOpen(true);
+    };
+
+    const closeHistorial = () => {
+        setIsHistorialOpen(false);
+        setAlumnoHistorial(null);
+    };
 
     // ── Modal de edición ─────────────────────────────────────
     const [editAlumno, setEditAlumno] = useState<Alumno | null>(null);
@@ -83,10 +99,12 @@ export default function Dashboard() {
     const [editDiaVenc, setEditDiaVenc] = useState(5);
     const [editPlan, setEditPlan] = useState<'libre' | '3x'>('libre');
     const [editEstado, setEditEstado] = useState<EstadoAlumno>('activo');
+    const [editModalTab, setEditModalTab] = useState<'datos' | 'historial'>('datos');
 
     const openEdit = (a: Alumno) => {
         setEditAlumno(a);
         setEditNombre(a.nombre);
+        setEditModalTab('datos');
         
         let displayWhatsapp = a.whatsapp || '';
         if (displayWhatsapp.startsWith('549')) {
@@ -121,14 +139,42 @@ export default function Dashboard() {
         closeEdit();
     };
 
+    // Conteo por situación para pestañas
+    const conteosPorEstado = useMemo(() => {
+        const counts: Record<string, number> = { activo: 0, becado: 0, suspendido: 0, inactivo: 0 };
+        alumnos.forEach((a) => {
+            const st = a.estado || 'activo';
+            counts[st] = (counts[st] || 0) + 1;
+        });
+        return counts;
+    }, [alumnos]);
+
+    // Resumen anual de cuotas para el alumno
+    const getResumenAnualAlumno = (alumnoId: string) => {
+        const pagosAlu = pagos.filter((p) => p.alumnoId === alumnoId && p.anio === anio && p.estado === 'pagado');
+        const mesesPagadosCount = pagosAlu.length;
+        const mesesEvaluados = mes;
+        let pendientesEnElAnio = 0;
+        for (let m = 1; m <= mes; m++) {
+            const estaPagado = pagosAlu.some((p) => p.mes === m);
+            if (!estaPagado) pendientesEnElAnio++;
+        }
+        const alDia = pendientesEnElAnio === 0;
+        return { mesesPagadosCount, mesesEvaluados, pendientesEnElAnio, alDia };
+    };
+
     const filteredAlumnos = useMemo(() => {
-        if (!busqueda.trim()) return alumnos;
+        let list = alumnos;
+        if (tabSituacion !== 'todos') {
+            list = list.filter((a) => (a.estado || 'activo') === tabSituacion);
+        }
+        if (!busqueda.trim()) return list;
         const q = busqueda.toLowerCase();
-        return alumnos.filter((a) =>
+        return list.filter((a) =>
             a.nombre.toLowerCase().includes(q) ||
             a.whatsapp.includes(q)
         );
-    }, [alumnos, busqueda]);
+    }, [alumnos, tabSituacion, busqueda]);
 
     const todosSeleccionados = filteredAlumnos.length > 0 && filteredAlumnos.every(a => seleccionados.includes(a.id));
     
@@ -286,7 +332,7 @@ export default function Dashboard() {
 
             {/* Alumnos Table with Payment Status */}
             <div className="card" style={{ animationDelay: '0.2s' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem', marginBottom: 'var(--space-lg)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem', marginBottom: 'var(--space-md)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
                         <h2 className="section-title" style={{ margin: 0 }}>🥋 Alumnos — Estado de Pago ({MONTH_NAMES[mes - 1]})</h2>
                         {seleccionados.length > 0 && (
@@ -310,6 +356,56 @@ export default function Dashboard() {
                         />
                     </div>
                 </div>
+
+                {/* Pestañas de Situación de Alumnos */}
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: 'var(--space-lg)', paddingBottom: '0.75rem', borderBottom: '1px solid rgba(34,197,94,0.1)' }}>
+                    <button
+                        type="button"
+                        onClick={() => setTabSituacion('todos')}
+                        className={`btn ${tabSituacion === 'todos' ? 'btn-primary' : 'btn-secondary'}`}
+                        style={{ padding: '5px 14px', fontSize: '0.82rem' }}
+                    >
+                        👥 Todos ({alumnos.length})
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setTabSituacion('activo')}
+                        className={`btn ${tabSituacion === 'activo' ? 'btn-primary' : 'btn-secondary'}`}
+                        style={{
+                            padding: '5px 14px',
+                            fontSize: '0.82rem',
+                            borderColor: tabSituacion === 'activo' ? undefined : 'rgba(34,197,94,0.3)',
+                            background: tabSituacion === 'activo' ? undefined : 'rgba(34,197,94,0.06)',
+                        }}
+                    >
+                        ✅ Activos ({conteosPorEstado.activo})
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setTabSituacion('becado')}
+                        className={`btn ${tabSituacion === 'becado' ? 'btn-primary' : 'btn-secondary'}`}
+                        style={{ padding: '5px 14px', fontSize: '0.82rem' }}
+                    >
+                        🎓 Becados ({conteosPorEstado.becado})
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setTabSituacion('suspendido')}
+                        className={`btn ${tabSituacion === 'suspendido' ? 'btn-primary' : 'btn-secondary'}`}
+                        style={{ padding: '5px 14px', fontSize: '0.82rem' }}
+                    >
+                        ⏸️ Suspendidos ({conteosPorEstado.suspendido})
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setTabSituacion('inactivo')}
+                        className={`btn ${tabSituacion === 'inactivo' ? 'btn-primary' : 'btn-secondary'}`}
+                        style={{ padding: '5px 14px', fontSize: '0.82rem' }}
+                    >
+                        ❌ Inactivos ({conteosPorEstado.inactivo})
+                    </button>
+                </div>
+
                 <div style={{ overflowX: 'auto' }}>
                     <table className="preview-table">
                         <thead>
@@ -337,13 +433,16 @@ export default function Dashboard() {
                             {filteredAlumnos.length === 0 ? (
                                 <tr>
                                     <td colSpan={9} style={{ textAlign: 'center', color: 'var(--text-dim)', padding: 'var(--space-xl)' }}>
-                                        No hay alumnos registrados. <a href="#/registrar">Registrá uno</a> o <a href="#/registrar">importá un Excel</a>.
+                                        No hay alumnos registrados con el filtro seleccionado.
                                     </td>
                                 </tr>
                             ) : filteredAlumnos.map((a) => {
                                 const estadoPago = getEstadoPago(a.id);
                                 const isSelected = seleccionados.includes(a.id);
                                 const estadoAlumno = a.estado || 'activo';
+                                const esActivo = estadoAlumno === 'activo';
+                                const resumenAnual = esActivo ? getResumenAnualAlumno(a.id) : null;
+
                                 return (
                                     <tr key={a.id} style={{ background: isSelected ? 'rgba(34, 197, 94, 0.1)' : estadoAlumno !== 'activo' ? 'rgba(100,100,100,0.1)' : undefined }}>
                                         <td style={{ textAlign: 'center' }}>
@@ -354,7 +453,32 @@ export default function Dashboard() {
                                                 style={{ cursor: 'pointer', width: 16, height: 16 }}
                                             />
                                         </td>
-                                        <td><strong>{a.nombre}</strong></td>
+                                        <td>
+                                            <strong>{a.nombre}</strong>
+                                            {esActivo && resumenAnual && (
+                                                <div style={{ marginTop: 3 }}>
+                                                    <span
+                                                        onClick={() => openHistorial(a)}
+                                                        style={{
+                                                            fontSize: '0.72rem',
+                                                            cursor: 'pointer',
+                                                            color: resumenAnual.alDia ? '#4ade80' : '#f59e0b',
+                                                            display: 'inline-flex',
+                                                            alignItems: 'center',
+                                                            gap: 4,
+                                                            transition: 'opacity 0.15s',
+                                                        }}
+                                                        title="Hacé click para ver el historial detallado de pagos"
+                                                        onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.75')}
+                                                        onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
+                                                    >
+                                                        {resumenAnual.alDia
+                                                            ? `✓ Al día (${resumenAnual.mesesPagadosCount}/${resumenAnual.mesesEvaluados} meses)`
+                                                            : `⚠️ Adeuda ${resumenAnual.pendientesEnElAnio} ${resumenAnual.pendientesEnElAnio === 1 ? 'cuota' : 'cuotas'} (${resumenAnual.mesesPagadosCount}/${resumenAnual.mesesEvaluados} pagadas)`}
+                                                    </span>
+                                                </div>
+                                            )}
+                                        </td>
                                         <td>{a.plan === 'libre' ? '🔥 Libre' : '💪 3x Sem.'}</td>
                                         <td>+{a.whatsapp}</td>
                                         <td>{formatCurrency(a.cuota)}</td>
@@ -401,6 +525,23 @@ export default function Dashboard() {
                                                     <button className="btn btn-secondary" style={{ padding: '2px 10px', fontSize: '0.75rem' }}
                                                         onClick={() => marcarPendiente(a.id, mes, anio)}>
                                                         ↩ Deshacer
+                                                    </button>
+                                                )}
+                                                {esActivo && (
+                                                    <button
+                                                        className="btn btn-secondary"
+                                                        style={{
+                                                            padding: '2px 8px',
+                                                            fontSize: '0.75rem',
+                                                            background: 'rgba(34,197,94,0.12)',
+                                                            color: '#4ade80',
+                                                            borderColor: 'rgba(34,197,94,0.35)',
+                                                            fontWeight: 600,
+                                                        }}
+                                                        title="Ver historial mensual y registrar pagos"
+                                                        onClick={() => openHistorial(a)}
+                                                    >
+                                                        📜 Historial
                                                     </button>
                                                 )}
                                                 <button
@@ -474,16 +615,68 @@ export default function Dashboard() {
                         boxShadow: '0 20px 60px rgba(0,0,0,0.6)',
                     }}>
                         {/* Header */}
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-xl)' }}>
-                            <h3 style={{ color: 'var(--accent-green)', fontFamily: 'Montserrat, sans-serif', display: 'flex', alignItems: 'center', gap: 8 }}>
-                                ✏️ Editar Alumno
-                                <span style={{ fontSize: '0.85rem', color: 'rgba(134,239,172,0.5)', fontWeight: 400 }}>{editAlumno.nombre}</span>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-md)' }}>
+                            <h3 style={{ color: 'var(--accent-green)', fontFamily: 'Montserrat, sans-serif', display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>
+                                🥋 Alumno: <span style={{ fontSize: '1rem', color: '#f0fdf4', fontWeight: 600 }}>{editAlumno.nombre}</span>
                             </h3>
                             <button
                                 onClick={closeEdit}
                                 style={{ background: 'none', border: 'none', color: 'rgba(134,239,172,0.5)', fontSize: '1.4rem', cursor: 'pointer', lineHeight: 1, padding: 4 }}
                                 title="Cerrar"
                             >✕</button>
+                        </div>
+
+                        {/* Pestañas del Alumno */}
+                        <div style={{ display: 'flex', gap: '0.5rem', borderBottom: '1px solid rgba(34,197,94,0.15)', marginBottom: 'var(--space-lg)' }}>
+                            <button
+                                type="button"
+                                onClick={() => setEditModalTab('datos')}
+                                style={{
+                                    background: editModalTab === 'datos' ? 'rgba(34,197,94,0.12)' : 'transparent',
+                                    color: editModalTab === 'datos' ? '#4ade80' : 'rgba(134,239,172,0.6)',
+                                    border: 'none',
+                                    borderBottom: editModalTab === 'datos' ? '2px solid #22c55e' : '2px solid transparent',
+                                    padding: '8px 16px',
+                                    fontSize: '0.88rem',
+                                    fontWeight: editModalTab === 'datos' ? 600 : 400,
+                                    cursor: 'pointer',
+                                    borderRadius: '6px 6px 0 0',
+                                }}
+                            >
+                                ✏️ Datos del Alumno
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    if (editAlumno.estado === 'activo') {
+                                        openHistorial(editAlumno);
+                                        closeEdit();
+                                    } else {
+                                        showToast(`ℹ️ El historial de cuotas mensuales aplica a alumnos con situación Activo (situación actual: ${editAlumno.estado})`, 'info');
+                                    }
+                                }}
+                                style={{
+                                    background: 'transparent',
+                                    color: editAlumno.estado === 'activo' ? '#22c55e' : 'rgba(134,239,172,0.4)',
+                                    border: 'none',
+                                    borderBottom: '2px solid transparent',
+                                    padding: '8px 16px',
+                                    fontSize: '0.88rem',
+                                    fontWeight: 500,
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 6,
+                                }}
+                                title={editAlumno.estado === 'activo' ? 'Ver y registrar cuotas mensuales de este alumno' : 'Solo disponible para alumnos en situación activo'}
+                            >
+                                📜 Historial de Pagos
+                                {editAlumno.estado === 'activo' && (
+                                    <span style={{ fontSize: '0.68rem', background: 'rgba(34,197,94,0.25)', color: '#22c55e', padding: '1px 6px', borderRadius: 8, fontWeight: 700 }}>
+                                        Abrir ↗
+                                    </span>
+                                )}
+                            </button>
                         </div>
 
                         {/* Nombre */}
@@ -587,6 +780,13 @@ export default function Dashboard() {
                     </div>
                 </div>
             )}
+
+            {/* ── Modal de Historial de Pagos de Alumno ──────────────────────── */}
+            <HistorialPagosModal
+                alumno={alumnoHistorial}
+                isOpen={isHistorialOpen}
+                onClose={closeHistorial}
+            />
         </>
     );
 }

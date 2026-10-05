@@ -290,7 +290,8 @@ export async function obtenerPagos(): Promise<Pago[]> {
     return readDataJSON().pagos;
 }
 
-export async function marcarPagado(alumnoId: string, mes: number, anio: number, monto: number): Promise<Pago> {
+export async function marcarPagado(alumnoId: string, mes: number, anio: number, monto: number, fechaPago?: string): Promise<Pago> {
+    const fPago = fechaPago ? new Date(fechaPago).toISOString() : new Date().toISOString();
     if (isSupabaseConfigured() && supabase) {
         // Upsert: actualizar si existe, crear si no
         const { data, error } = await supabase
@@ -301,7 +302,7 @@ export async function marcarPagado(alumnoId: string, mes: number, anio: number, 
                 anio,
                 monto,
                 estado: 'pagado',
-                fecha_pago: new Date().toISOString()
+                fecha_pago: fPago
             }, { onConflict: 'alumno_id,mes,anio' })
             .select()
             .single();
@@ -318,7 +319,8 @@ export async function marcarPagado(alumnoId: string, mes: number, anio: number, 
     const existente = store.pagos.find(p => p.alumnoId === alumnoId && p.mes === mes && p.anio === anio);
     if (existente) {
         existente.estado = 'pagado';
-        existente.fechaPago = new Date().toISOString();
+        existente.monto = monto;
+        existente.fechaPago = fPago;
         writeDataJSON(store);
         return existente;
     }
@@ -326,7 +328,7 @@ export async function marcarPagado(alumnoId: string, mes: number, anio: number, 
         id: Date.now().toString(36),
         alumnoId, mes, anio, monto,
         estado: 'pagado',
-        fechaPago: new Date().toISOString()
+        fechaPago: fPago
     };
     store.pagos.push(nuevoPago);
     writeDataJSON(store);

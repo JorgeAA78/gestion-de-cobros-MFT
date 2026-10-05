@@ -43,7 +43,7 @@ export interface AppConfig {
 }
 
 export interface ActivityLog {
-    type: 'sent' | 'pending' | 'failed';
+    type: 'sent' | 'pending' | 'failed' | 'payment' | 'register' | 'config';
     message: string;
     timestamp: string;
 }

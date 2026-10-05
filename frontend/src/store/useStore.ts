@@ -130,7 +130,7 @@ interface StoreState {
     importAlumnos: (alumnos: Omit<Alumno, 'id' | 'fechaRegistro'>[]) => number;
 
     // Pagos
-    registrarPago: (alumnoId: string, mes: number, anio: number, monto: number) => void;
+    registrarPago: (alumnoId: string, mes: number, anio: number, monto: number, fechaPago?: string) => void;
     marcarPagado: (alumnoId: string, mes: number, anio: number) => void;
     marcarPendiente: (alumnoId: string, mes: number, anio: number) => void;
     getEstadoPago: (alumnoId: string, mes: number, anio: number) => 'pagado' | 'pendiente' | 'vencido';
@@ -280,21 +280,22 @@ export const useStore = create<StoreState>()(
 
             // ─── Pagos ────────────────────────────────────
 
-            registrarPago: (alumnoId, mes, anio, monto) => {
+            registrarPago: (alumnoId, mes, anio, monto, fechaPago) => {
+                const timestamp = fechaPago ? new Date(fechaPago).toISOString() : new Date().toISOString();
                 set((s) => {
                     const existing = s.pagos.findIndex(
                         (p) => p.alumnoId === alumnoId && p.mes === mes && p.anio === anio
                     );
                     if (existing >= 0) {
                         const updated = [...s.pagos];
-                        updated[existing] = { ...updated[existing], estado: 'pagado', fechaPago: new Date().toISOString(), monto };
+                        updated[existing] = { ...updated[existing], estado: 'pagado', fechaPago: timestamp, monto };
                         return { pagos: updated };
                     }
                     return {
-                        pagos: [...s.pagos, { alumnoId, mes, anio, estado: 'pagado' as const, fechaPago: new Date().toISOString(), monto }],
+                        pagos: [...s.pagos, { alumnoId, mes, anio, estado: 'pagado' as const, fechaPago: timestamp, monto }],
                     };
                 });
-                apiPost('/pagos', { alumnoId, mes, anio, estado: 'pagado', monto });
+                apiPost('/pagos', { alumnoId, mes, anio, estado: 'pagado', monto, fechaPago: timestamp });
             },
 
             marcarPagado: (alumnoId, mes, anio) => {
