@@ -24,6 +24,7 @@ import {
     actualizarAlumno,
     marcarPagado,
     marcarPendiente,
+    marcarMesesInicialesPagados,
     agregarActividad,
     obtenerConfig,
     guardarConfig,
@@ -381,7 +382,7 @@ app.put('/api/data', authMiddleware, async (req, res) => {
 // POST alumno
 app.post('/api/alumnos', authMiddleware, async (req, res) => {
     try {
-        const { nombre, whatsapp, plan, cuota, diaVencimiento, estado, notas } = req.body;
+        const { nombre, whatsapp, plan, cuota, diaVencimiento, estado, notas, fechaRegistro } = req.body;
         
         if (!nombre || typeof nombre !== 'string' || nombre.trim().length === 0) {
             return res.status(400).json({ error: 'Nombre inválido' });
@@ -403,7 +404,8 @@ app.post('/api/alumnos', authMiddleware, async (req, res) => {
             cuota,
             diaVencimiento: typeof diaVencimiento === 'number' ? diaVencimiento : 5,
             estado: sanitizeString(estado || 'activo') as Alumno['estado'],
-            notas: notas ? sanitizeString(notas) : undefined
+            notas: notas ? sanitizeString(notas) : undefined,
+            fechaRegistro: fechaRegistro ? sanitizeString(fechaRegistro) : undefined
         };
 
         const alumno = await crearAlumno(sanitizedAlumno);
@@ -459,6 +461,9 @@ app.put('/api/alumnos/:id', authMiddleware, async (req, res) => {
         if (data.notas !== undefined) {
             updateData.notas = data.notas ? sanitizeString(data.notas) : null;
         }
+        if (data.fechaRegistro !== undefined && data.fechaRegistro) {
+            updateData.fechaRegistro = sanitizeString(data.fechaRegistro);
+        }
 
         const ok = await actualizarAlumno(id, updateData);
         if (ok) {
@@ -508,6 +513,18 @@ app.post('/api/pagos', authMiddleware, async (req, res) => {
     } catch (error) {
         console.error('Error actualizando pago:', error);
         res.status(500).json({ error: 'Error al actualizar pago' });
+    }
+});
+
+// POST marcar meses iniciales (Enero, Febrero, Marzo, Abril)
+app.post('/api/pagos/marcar-iniciales', authMiddleware, async (req, res) => {
+    try {
+        const { alumnoId, meses, anio } = req.body;
+        const result = await marcarMesesInicialesPagados(alumnoId, meses || [1, 2, 3, 4], anio || 2026);
+        res.json({ ok: true, ...result });
+    } catch (error) {
+        console.error('Error marcando meses iniciales:', error);
+        res.status(500).json({ error: 'Error al marcar meses iniciales' });
     }
 });
 

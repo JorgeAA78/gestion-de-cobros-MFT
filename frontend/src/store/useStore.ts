@@ -124,10 +124,10 @@ interface StoreState {
     pushToServer: () => void;
 
     // Alumnos
-    addAlumno: (alumno: Omit<Alumno, 'id' | 'fechaRegistro'>) => Alumno;
+    addAlumno: (alumno: Omit<Alumno, 'id' | 'fechaRegistro'> & { fechaRegistro?: string }) => Alumno;
     updateAlumno: (id: string, data: Partial<Alumno>) => void;
     removeAlumno: (id: string) => void;
-    importAlumnos: (alumnos: Omit<Alumno, 'id' | 'fechaRegistro'>[]) => number;
+    importAlumnos: (alumnos: (Omit<Alumno, 'id' | 'fechaRegistro'> & { fechaRegistro?: string })[]) => number;
 
     // Pagos
     registrarPago: (alumnoId: string, mes: number, anio: number, monto: number, fechaPago?: string) => void;
@@ -135,6 +135,7 @@ interface StoreState {
     marcarPendiente: (alumnoId: string, mes: number, anio: number) => void;
     getEstadoPago: (alumnoId: string, mes: number, anio: number) => 'pagado' | 'pendiente' | 'vencido';
     getAlumnosPendientes: (mes: number, anio: number) => Alumno[];
+    marcarEneAbrPagados: (alumnoId?: string, anio?: number) => Promise<void>;
 
     // Config
     updateConfig: (data: Partial<AppConfig>) => void;
@@ -215,7 +216,7 @@ export const useStore = create<StoreState>()(
                     ...data,
                     estado: data.estado || 'activo',
                     id: tempId,
-                    fechaRegistro: new Date().toISOString(),
+                    fechaRegistro: data.fechaRegistro || new Date().toISOString(),
                 };
                 set((s) => ({ alumnos: [...s.alumnos, alumno] }));
 
@@ -267,7 +268,7 @@ export const useStore = create<StoreState>()(
                     ...data,
                     estado: data.estado || 'activo',
                     id: `ALU-${Date.now()}-${i}-${Math.random().toString(36).slice(2, 6)}`,
-                    fechaRegistro: new Date().toISOString(),
+                    fechaRegistro: data.fechaRegistro || new Date().toISOString(),
                 }));
                 set((s) => ({ alumnos: [...s.alumnos, ...newAlumnos] }));
 
@@ -331,6 +332,31 @@ export const useStore = create<StoreState>()(
                     const pago = pagos.find((p) => p.alumnoId === a.id && p.mes === mes && p.anio === anio);
                     return !pago || pago.estado !== 'pagado';
                 });
+            },
+
+            marcarEneAbrPagados: async (alumnoId?: string, anio = 2026) => {
+                const meses = [1, 2, 3, 4];
+                const { alumnos, pagos } = get();
+                const objetivos = alumnoId
+                    ? alumnos.filter((a) => a.id === alumnoId)
+                    : alumnos.filter((a) => (a.estado || 'activo') === 'activo');
+
+                const nuevosPagos = [...pagos];
+                for (const a of objetivos) {
+                    for (const m of meses) {
+                        const mm = m < 10 ? `0${m}` : `${m}`;
+                        const fechaPago = `${anio}-${mm}-10T12:00:00.000Z`;
+                        const monto = a.cuota || 25000;
+                        const idx = nuevosPagos.findIndex((p) => p.alumnoId === a.id && p.mes === m && p.anio === anio);
+                        if (idx >= 0) {
+                            nuevosPagos[idx] = { ...nuevosPagos[idx], estado: 'pagado', monto, fechaPago };
+                        } else {
+                            nuevosPagos.push({ alumnoId: a.id, mes: m, anio, estado: 'pagado', monto, fechaPago });
+                        }
+                    }
+                }
+                set({ pagos: nuevosPagos });
+                await apiPost('/pagos/marcar-iniciales', { alumnoId, meses, anio });
             },
 
             // ─── Config ───────────────────────────────────

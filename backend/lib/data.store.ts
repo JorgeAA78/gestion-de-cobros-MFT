@@ -25,6 +25,7 @@ export interface Alumno {
     diaVencimiento?: number;
     estado: 'activo' | 'becado' | 'suspendido' | 'inactivo';
     notas?: string;
+    fechaRegistro?: string;
 }
 
 export interface Pago {
@@ -74,7 +75,8 @@ function dbToAlumno(db: DbAlumno): Alumno {
         cuota: db.cuota,
         diaVencimiento: db.dia_vencimiento,
         estado: db.estado || 'activo',
-        notas: db.notas || undefined
+        notas: db.notas || undefined,
+        fechaRegistro: db.creado_en || undefined
     };
 }
 
@@ -138,17 +140,22 @@ export async function obtenerAlumnos(): Promise<Alumno[]> {
 
 export async function crearAlumno(alumno: Omit<Alumno, 'id'>): Promise<Alumno> {
     if (isSupabaseConfigured() && supabase) {
+        const insertData: Record<string, any> = {
+            nombre: alumno.nombre,
+            whatsapp: alumno.whatsapp,
+            plan: alumno.plan,
+            cuota: alumno.cuota,
+            dia_vencimiento: alumno.diaVencimiento || 5,
+            estado: alumno.estado || 'activo',
+            notas: alumno.notas
+        };
+        if (alumno.fechaRegistro) {
+            insertData.creado_en = new Date(alumno.fechaRegistro).toISOString();
+        }
+        
         const { data, error } = await supabase
             .from('alumnos')
-            .insert({
-                nombre: alumno.nombre,
-                whatsapp: alumno.whatsapp,
-                plan: alumno.plan,
-                cuota: alumno.cuota,
-                dia_vencimiento: alumno.diaVencimiento || 5,
-                estado: alumno.estado || 'activo',
-                notas: alumno.notas
-            })
+            .insert(insertData)
             .select()
             .single();
         
@@ -179,7 +186,8 @@ export async function crearAlumnosBulk(alumnos: Omit<Alumno, 'id'>[]): Promise<A
             cuota: a.cuota,
             dia_vencimiento: a.diaVencimiento || 5,
             estado: a.estado || 'activo',
-            notas: a.notas
+            notas: a.notas,
+            ...(a.fechaRegistro ? { creado_en: new Date(a.fechaRegistro).toISOString() } : {})
         }));
         
         const { data, error } = await supabase
@@ -252,6 +260,9 @@ export async function actualizarAlumno(id: string, data: Partial<Omit<Alumno, 'i
         if (data.diaVencimiento !== undefined) updateData.dia_vencimiento = data.diaVencimiento;
         if (data.estado !== undefined) updateData.estado = data.estado;
         if (data.notas !== undefined) updateData.notas = data.notas;
+        if (data.fechaRegistro !== undefined && data.fechaRegistro) {
+            updateData.creado_en = new Date(data.fechaRegistro).toISOString();
+        }
 
         const { error } = await supabase
             .from('alumnos')
@@ -356,6 +367,74 @@ export async function marcarPendiente(alumnoId: string, mes: number, anio: numbe
         writeDataJSON(store);
     }
     return true;
+}
+
+export async function marcarMesesInicialesPagados(alumnoId?: string, meses: number[] = [1, 2, 3, 4], anio: number = 2026): Promise<{ insertados: number }> {
+    if (isSupabaseConfigured() && supabase) {
+        let query = supabase.from('alumnos').select('id, cuota, activo, estado');
+        if (alumnoId) {
+            query = query.eq('id', alumnoId);
+        }
+        const { data: alumnos, error } = await query;
+        if (error || !alumnos) return { insertados: 0 };
+
+        const objetivos = alumnoId ? alumnos : alumnos.filter(a => a.activo !== false && (a.estado || 'activo') === 'activo');
+        const batch: any[] = [];
+        for (const a of objetivos) {
+            for (const m of meses) {
+                const mm = m < 10 ? `0${m}` : `${m}`;
+                batch.push({
+                    alumno_id: a.id,
+                    mes: m,
+                    anio: anio,
+                    monto: typeof a.cuota === 'number' && a.cuota > 0 ? a.cuota : 25000,
+                    estado: 'pagado',
+                    fecha_pago: `${anio}-${mm}-10T12:00:00.000Z`
+                });
+            }
+        }
+
+        let total = 0;
+        const batchSize = 100;
+        for (let i = 0; i < batch.length; i += batchSize) {
+            const chunk = batch.slice(i, i + batchSize);
+            const { error: upsertErr } = await supabase.from('pagos').upsert(chunk, { onConflict: 'alumno_id,mes,anio' });
+            if (!upsertErr) total += chunk.length;
+        }
+        return { insertados: total };
+    }
+
+    // Fallback JSON
+    const store = readDataJSON();
+    const objetivos = alumnoId
+        ? store.alumnos.filter(a => a.id === alumnoId)
+        : store.alumnos.filter(a => (a.estado || 'activo') === 'activo');
+    let total = 0;
+    for (const a of objetivos) {
+        for (const m of meses) {
+            const mm = m < 10 ? `0${m}` : `${m}`;
+            const fechaPago = `${anio}-${mm}-10T12:00:00.000Z`;
+            const existente = store.pagos.find(p => p.alumnoId === a.id && p.mes === m && p.anio === anio);
+            if (existente) {
+                existente.estado = 'pagado';
+                existente.monto = a.cuota || 25000;
+                existente.fechaPago = fechaPago;
+            } else {
+                store.pagos.push({
+                    id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+                    alumnoId: a.id,
+                    mes: m,
+                    anio,
+                    monto: a.cuota || 25000,
+                    estado: 'pagado',
+                    fechaPago
+                });
+            }
+            total++;
+        }
+    }
+    writeDataJSON(store);
+    return { insertados: total };
 }
 
 // ─── Funciones de Actividad ─────────────────────────────────────────────────

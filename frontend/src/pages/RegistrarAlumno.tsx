@@ -26,6 +26,7 @@ export default function RegistrarAlumno() {
     const [notas, setNotas] = useState('');
     const [diaVencimiento, setDiaVencimiento] = useState(new Date().getDate());
     const [estado, setEstado] = useState<EstadoAlumno>('activo');
+    const [fechaAlta, setFechaAlta] = useState(() => new Date().toISOString().split('T')[0]);
     const [loading, setLoading] = useState(false);
 
     // Import state
@@ -51,6 +52,7 @@ export default function RegistrarAlumno() {
         addAlumno({
             nombre: sanitizedNombre, whatsapp: formatted, email: sanitizedEmail, plan, cuota: cuotaVal,
             nivel, notas: sanitizedNotas, diaVencimiento, estado,
+            fechaRegistro: fechaAlta ? new Date(fechaAlta + 'T12:00:00Z').toISOString() : new Date().toISOString(),
         });
 
         addActivity('sent', `Alumno registrado: ${sanitizedNombre} (${plan === 'libre' ? 'Libre' : '3x Semana'})`);
@@ -72,6 +74,7 @@ export default function RegistrarAlumno() {
         setNombre(''); setWhatsapp(''); setEmail(''); setPlan('libre');
         setCuota(''); setNivel('blanco'); setMeses([currentMonth]); setNotas('');
         setDiaVencimiento(new Date().getDate()); setEstado('activo');
+        setFechaAlta(new Date().toISOString().split('T')[0]);
         setLoading(false);
     };
 
@@ -263,16 +266,30 @@ export default function RegistrarAlumno() {
                         </div>
                     </div>
 
-                    <div className="form-group">
-                        <label>Estado del Alumno</label>
-                        <select className="form-select" value={estado} onChange={(e) => setEstado(e.target.value as EstadoAlumno)}>
-                            {Object.entries(ESTADO_LABELS).map(([value, label]) => (
-                                <option key={value} value={value}>{label}</option>
-                            ))}
-                        </select>
-                        <p className="form-hint">
-                            Solo los alumnos "Activos" reciben recordatorios de pago automáticos.
-                        </p>
+                    <div className="form-row">
+                        <div className="form-group">
+                            <label>Estado del Alumno</label>
+                            <select className="form-select" value={estado} onChange={(e) => setEstado(e.target.value as EstadoAlumno)}>
+                                {Object.entries(ESTADO_LABELS).map(([value, label]) => (
+                                    <option key={value} value={value}>{label}</option>
+                                ))}
+                            </select>
+                            <p className="form-hint">
+                                Solo los alumnos "Activos" reciben recordatorios de pago automáticos.
+                            </p>
+                        </div>
+                        <div className="form-group">
+                            <label>📅 Fecha de Alta / Ingreso</label>
+                            <input
+                                type="date"
+                                className="form-input"
+                                value={fechaAlta}
+                                onChange={(e) => setFechaAlta(e.target.value)}
+                            />
+                            <p className="form-hint">
+                                Fecha en que el alumno ingresa a la academia.
+                            </p>
+                        </div>
                     </div>
 
                     <h3 className="section-title mt-2">📅 Meses a Cobrar</h3>

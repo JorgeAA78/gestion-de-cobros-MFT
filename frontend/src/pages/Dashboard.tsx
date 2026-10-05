@@ -99,6 +99,7 @@ export default function Dashboard() {
     const [editDiaVenc, setEditDiaVenc] = useState(5);
     const [editPlan, setEditPlan] = useState<'libre' | '3x'>('libre');
     const [editEstado, setEditEstado] = useState<EstadoAlumno>('activo');
+    const [editFechaRegistro, setEditFechaRegistro] = useState('');
     const [editModalTab, setEditModalTab] = useState<'datos' | 'historial'>('datos');
 
     const openEdit = (a: Alumno) => {
@@ -118,6 +119,8 @@ export default function Dashboard() {
         setEditDiaVenc(a.diaVencimiento ?? config.diaEnvio ?? 5);
         setEditPlan(a.plan);
         setEditEstado(a.estado || 'activo');
+        const fechaAlta = a.fechaRegistro ? new Date(a.fechaRegistro).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+        setEditFechaRegistro(fechaAlta);
     };
 
     const closeEdit = () => setEditAlumno(null);
@@ -134,6 +137,7 @@ export default function Dashboard() {
             diaVencimiento: editDiaVenc,
             plan: editPlan,
             estado: editEstado,
+            fechaRegistro: editFechaRegistro ? new Date(editFechaRegistro + 'T12:00:00Z').toISOString() : editAlumno.fechaRegistro,
         });
         showToast(`✅ Alumno ${sanitizedNombre} actualizado`, 'success');
         closeEdit();
@@ -420,6 +424,7 @@ export default function Dashboard() {
                                     />
                                 </th>
                                 <th>Nombre</th>
+                                <th>Fecha Alta</th>
                                 <th>Plan</th>
                                 <th>WhatsApp</th>
                                 <th>Cuota</th>
@@ -432,7 +437,7 @@ export default function Dashboard() {
                         <tbody>
                             {filteredAlumnos.length === 0 ? (
                                 <tr>
-                                    <td colSpan={9} style={{ textAlign: 'center', color: 'var(--text-dim)', padding: 'var(--space-xl)' }}>
+                                    <td colSpan={10} style={{ textAlign: 'center', color: 'var(--text-dim)', padding: 'var(--space-xl)' }}>
                                         No hay alumnos registrados con el filtro seleccionado.
                                     </td>
                                 </tr>
@@ -455,6 +460,11 @@ export default function Dashboard() {
                                         </td>
                                         <td>
                                             <strong>{a.nombre}</strong>
+                                            {a.fechaRegistro && (
+                                                <div style={{ fontSize: '0.72rem', color: 'rgba(134,239,172,0.7)', marginTop: 2 }}>
+                                                    📅 Alta: {new Date(a.fechaRegistro).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                                                </div>
+                                            )}
                                             {esActivo && resumenAnual && (
                                                 <div style={{ marginTop: 3 }}>
                                                     <span
@@ -478,6 +488,15 @@ export default function Dashboard() {
                                                     </span>
                                                 </div>
                                             )}
+                                        </td>
+                                        <td>
+                                            <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.75)', whiteSpace: 'nowrap' }} title="Fecha en que se dio de alta al alumno">
+                                                {a.fechaRegistro ? (
+                                                    new Date(a.fechaRegistro).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+                                                ) : (
+                                                    <span style={{ color: 'var(--text-dim)' }}>—</span>
+                                                )}
+                                            </span>
                                         </td>
                                         <td>{a.plan === 'libre' ? '🔥 Libre' : '💪 3x Sem.'}</td>
                                         <td>+{a.whatsapp}</td>
@@ -738,7 +757,7 @@ export default function Dashboard() {
                         </div>
 
                         {/* Día de Vencimiento y Estado en fila */}
-                        <div className="form-row" style={{ marginBottom: 'var(--space-lg)' }}>
+                        <div className="form-row" style={{ marginBottom: 'var(--space-md)' }}>
                             <div className="form-group" style={{ marginBottom: 0 }}>
                                 <label>📅 Día de Vencimiento</label>
                                 <input
@@ -764,6 +783,18 @@ export default function Dashboard() {
                                 </select>
                                 <p className="form-hint">Solo "Activo" recibe recordatorios</p>
                             </div>
+                        </div>
+
+                        {/* Fecha de Alta / Registro */}
+                        <div className="form-group" style={{ marginBottom: 'var(--space-lg)' }}>
+                            <label>📅 Fecha de Alta / Registro</label>
+                            <input
+                                type="date"
+                                className="form-input"
+                                value={editFechaRegistro}
+                                onChange={(e) => setEditFechaRegistro(e.target.value)}
+                            />
+                            <p className="form-hint">Fecha en que se dio de alta al alumno</p>
                         </div>
 
                         {/* Botones */}
