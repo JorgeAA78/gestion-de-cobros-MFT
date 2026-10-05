@@ -11,7 +11,9 @@
     "build:server": "pnpm --filter backend build",
     "build:all": "pnpm run build && pnpm run build:server",
     "start": "pnpm --filter backend start",
-    "lint": "pnpm --filter frontend lint"
+    "lint": "pnpm --filter frontend lint",
+    "cap:sync": "pnpm --filter frontend exec cap sync",
+    "cap:open": "pnpm --filter frontend exec cap open android"
   },
   "dependencies": {
     "concurrently": "^9.2.1"

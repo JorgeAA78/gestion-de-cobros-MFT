@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Cobros MFT</string>
+    <string name="title_activity_main">Cobros MFT</string>
+    <string name="package_name">com.mft.cobros</string>
+    <string name="custom_url_scheme">com.mft.cobros</string>
+</resources>
