@@ -521,6 +521,11 @@ export default function Dashboard() {
                                                     background: estadoAlumno === 'activo' ? 'rgba(34,197,94,0.1)' : 'rgba(245,158,11,0.1)',
                                                     borderColor: estadoAlumno === 'activo' ? 'rgba(34,197,94,0.3)' : 'rgba(245,158,11,0.3)',
                                                     color: estadoAlumno === 'activo' ? '#4ade80' : '#fbbf24',
+                                                    width: 'auto',
+                                                    minWidth: 85,
+                                                    maxWidth: 120,
+                                                    margin: 0,
+                                                    display: 'inline-block',
                                                 }}
                                             >
                                                 {Object.entries(ESTADO_LABELS).map(([val, lab]) => (
@@ -565,46 +570,48 @@ export default function Dashboard() {
                                                     ↩ Deshacer
                                                 </button>
                                             )}
-                                            {esActivo && (
+                                            <div className="alumno-mobile-tools">
+                                                {esActivo && (
+                                                    <button
+                                                        className="btn btn-secondary btn-tool"
+                                                        style={{ background: 'rgba(34,197,94,0.12)', color: '#4ade80', borderColor: 'rgba(34,197,94,0.3)' }}
+                                                        onClick={() => openHistorial(a)}
+                                                        title="Historial de cuotas"
+                                                    >
+                                                        📜
+                                                    </button>
+                                                )}
+                                                <a
+                                                    href={`https://wa.me/${a.whatsapp}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="btn btn-secondary btn-tool"
+                                                    style={{ background: 'rgba(37,211,102,0.12)', color: '#25D366', borderColor: 'rgba(37,211,102,0.3)' }}
+                                                    title="Enviar WhatsApp"
+                                                >
+                                                    💬
+                                                </a>
                                                 <button
                                                     className="btn btn-secondary btn-tool"
-                                                    style={{ background: 'rgba(34,197,94,0.12)', color: '#4ade80', borderColor: 'rgba(34,197,94,0.3)' }}
-                                                    onClick={() => openHistorial(a)}
-                                                    title="Historial de cuotas"
+                                                    style={{ background: 'rgba(59,130,246,0.12)', color: '#60a5fa', borderColor: 'rgba(59,130,246,0.3)' }}
+                                                    onClick={() => openEdit(a)}
+                                                    title="Editar alumno"
                                                 >
-                                                    📜
+                                                    ✏️
                                                 </button>
-                                            )}
-                                            <a
-                                                href={`https://wa.me/${a.whatsapp}`}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="btn btn-secondary btn-tool"
-                                                style={{ background: 'rgba(37,211,102,0.12)', color: '#25D366', borderColor: 'rgba(37,211,102,0.3)' }}
-                                                title="Enviar WhatsApp"
-                                            >
-                                                💬
-                                            </a>
-                                            <button
-                                                className="btn btn-secondary btn-tool"
-                                                style={{ background: 'rgba(59,130,246,0.12)', color: '#60a5fa', borderColor: 'rgba(59,130,246,0.3)' }}
-                                                onClick={() => openEdit(a)}
-                                                title="Editar alumno"
-                                            >
-                                                ✏️
-                                            </button>
-                                            <button
-                                                className="btn btn-secondary btn-tool"
-                                                style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444', borderColor: 'rgba(239,68,68,0.3)' }}
-                                                onClick={() => {
-                                                    if (window.confirm(`¿Estás seguro de eliminar a ${a.nombre}?`)) {
-                                                        removeAlumno(a.id);
-                                                    }
-                                                }}
-                                                title="Eliminar alumno"
-                                            >
-                                                🗑️
-                                            </button>
+                                                <button
+                                                    className="btn btn-secondary btn-tool"
+                                                    style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444', borderColor: 'rgba(239,68,68,0.3)' }}
+                                                    onClick={() => {
+                                                        if (window.confirm(`¿Estás seguro de eliminar a ${a.nombre}?`)) {
+                                                            removeAlumno(a.id);
+                                                        }
+                                                    }}
+                                                    title="Eliminar alumno"
+                                                >
+                                                    🗑️
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 );

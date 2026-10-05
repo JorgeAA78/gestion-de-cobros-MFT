@@ -189,7 +189,7 @@ export default function Recordatorios() {
                         NO pagaron {MONTH_NAMES[mes - 1]}. Los que ya abonaron no recibirán el recordatorio.
                     </div>
 
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 'var(--space-md)' }}>
+                    <div className="btn-reset-recordatorios-wrapper" style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 'var(--space-md)' }}>
                         <button
                             className="btn btn-danger"
                             style={{
@@ -221,12 +221,89 @@ export default function Recordatorios() {
                     )}
                 </div>
 
-                {/* Table */}
+                {/* List / Table */}
                 <div className="card mt-2">
                     <h3 className="section-title">
                         📋 Alumnos Pendientes de {MONTH_NAMES[mes - 1]} ({pendientes.length})
                     </h3>
-                    <div style={{ overflowX: 'auto' }}>
+
+                    {/* Vista Móvil: Tarjetas compactas */}
+                    <div className="recordatorios-mobile-list">
+                        {pendientes.length === 0 ? (
+                            <div style={{ textAlign: 'center', color: 'var(--text-dim)', padding: 'var(--space-lg)' }}>
+                                🎉 ¡Todos los alumnos pagaron {MONTH_NAMES[mes - 1]}!
+                            </div>
+                        ) : (
+                            pendientes.map((a, i) => {
+                                const key = keyFor(a.id);
+                                const manualSent = hasManual(key);
+                                const autoSent = hasAuto(key);
+
+                                let displayStatus: StatusType = 'pending';
+                                if (sending && statusManual?.resultados && statusManual.resultados[a.id]) {
+                                    const resStatus = statusManual.resultados[a.id];
+                                    if (resStatus === 'sent') displayStatus = 'manual_sent';
+                                    else if (resStatus === 'sending') displayStatus = 'sending';
+                                    else if (resStatus === 'error') displayStatus = 'error';
+                                    else displayStatus = 'pending';
+                                } else {
+                                    displayStatus = manualSent ? 'manual_sent' : autoSent ? 'auto_sent' : 'pending';
+                                }
+
+                                return (
+                                    <div key={a.id} className="recordatorio-mobile-item">
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 6 }}>
+                                            <div style={{ minWidth: 0, flex: 1 }}>
+                                                <span style={{ fontSize: '0.75rem', color: 'rgba(134,239,172,0.5)', marginRight: 6 }}>#{i + 1}</span>
+                                                <strong style={{ fontSize: '0.92rem', color: '#f0fdf4', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                    {a.nombre}
+                                                </strong>
+                                            </div>
+                                            <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+                                                <span className="badge" style={{ fontSize: '0.7rem', padding: '2px 6px' }}>
+                                                    {a.plan === 'libre' ? '🔥 Libre' : '💪 3x'}
+                                                </span>
+                                                <span className="badge" style={{ fontSize: '0.7rem', padding: '2px 6px', background: 'rgba(34,197,94,0.15)', color: '#4ade80' }}>
+                                                    {formatCurrency(a.cuota)}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8, gap: 8, borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 6 }}>
+                                            <a
+                                                href={`https://wa.me/${a.whatsapp}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                style={{ fontSize: '0.78rem', color: '#25D366', display: 'flex', alignItems: 'center', gap: 4, textDecoration: 'none' }}
+                                                title="Abrir chat de WhatsApp"
+                                            >
+                                                💬 +{a.whatsapp}
+                                            </a>
+                                            <button
+                                                type="button"
+                                                className={`badge ${displayStatus === 'manual_sent' || displayStatus === 'auto_sent' ? 'pagado' : displayStatus === 'error' ? 'vencido' : 'pendiente'}`}
+                                                style={{ cursor: sending || autoSent ? 'default' : 'pointer', border: 'none', padding: '4px 10px', fontSize: '0.72rem', flexShrink: 0 }}
+                                                title={autoSent ? 'Envío automático registrado' : 'Clic para alternar manual / pendiente'}
+                                                onClick={() => {
+                                                    if (sending || autoSent) return;
+                                                    toggleRecordatorioEnviado(a.id, mes, anio, 'manual');
+                                                }}
+                                            >
+                                                {displayStatus === 'sending' && '⏳ Enviando...'}
+                                                {displayStatus === 'error' && '✗ Error'}
+                                                {displayStatus === 'manual_sent' && '✓ Manual'}
+                                                {displayStatus === 'auto_sent' && '🤖 Automático'}
+                                                {displayStatus === 'pending' && !autoSent && !manualSent && '⏳ Pendiente (Tocar)'}
+                                            </button>
+                                        </div>
+                                    </div>
+                                );
+                            })
+                        )}
+                    </div>
+
+                    {/* Vista Desktop: Tabla completa */}
+                    <div className="recordatorios-desktop-table" style={{ overflowX: 'auto' }}>
                         <table className="preview-table">
                             <thead>
                                 <tr><th>#</th><th>Nombre</th><th>WhatsApp</th><th>Plan</th><th>Cuota</th><th>Estado</th></tr>

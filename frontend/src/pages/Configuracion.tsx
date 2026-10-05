@@ -153,9 +153,9 @@ export default function Configuracion() {
                         <p className="form-hint">Tu número conectado a WABA/YCloud en formato internacional E.164 (debe comenzar con +)</p>
                     </div>
 
-                    <div style={{ display: 'flex', gap: 'var(--space-md)' }}>
-                        <button className="btn btn-primary" onClick={test}>🔄 Probar Conexión</button>
-                        <button className="btn btn-secondary" onClick={() => setShowTest(!showTest)}>📱 Mensaje de Prueba</button>
+                    <div style={{ display: 'flex', gap: 'var(--space-md)', flexWrap: 'wrap' }}>
+                        <button className="btn btn-primary" style={{ flex: '1 1 180px', justifyContent: 'center' }} onClick={test}>🔄 Probar Conexión</button>
+                        <button className="btn btn-secondary" style={{ flex: '1 1 180px', justifyContent: 'center' }} onClick={() => setShowTest(!showTest)}>📱 Mensaje de Prueba</button>
                     </div>
                 </div>
 

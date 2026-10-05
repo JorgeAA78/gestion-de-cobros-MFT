@@ -2433,24 +2433,78 @@ a:hover {
   margin-top: 4px;
   padding-top: 8px;
   border-top: 1px solid rgba(255, 255, 255, 0.05);
+  flex-wrap: wrap;
 }
 
 .alumno-mobile-actions .btn-pay {
-  flex: 1;
-  padding: 6px 12px;
-  font-size: 0.8rem;
+  flex: 1 1 110px;
+  min-width: 105px;
+  padding: 6px 8px;
+  font-size: 0.78rem;
   font-weight: 700;
   justify-content: center;
+  white-space: nowrap;
+}
+
+.alumno-mobile-tools {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
 }
 
 .alumno-mobile-actions .btn-tool {
-  padding: 6px 10px;
-  font-size: 0.82rem;
+  padding: 0 !important;
+  width: 32px !important;
+  min-width: 32px !important;
+  height: 32px !important;
+  font-size: 0.82rem !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+  border-radius: 8px !important;
+}
+
+/* Listado móvil de Recordatorios */
+.recordatorios-mobile-list {
+  display: none;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.recordatorios-desktop-table {
+  display: block;
+}
+
+.recordatorio-mobile-item {
+  background: rgba(13, 22, 16, 0.85);
+  border: 1px solid rgba(34, 197, 94, 0.18);
+  border-radius: 10px;
+  padding: 10px 12px;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 36px;
-  height: 34px;
+  flex-direction: column;
+  gap: 4px;
+  transition: all 0.15s ease;
+}
+
+.recordatorio-mobile-item:hover {
+  background: rgba(34, 197, 94, 0.06);
+  border-color: rgba(34, 197, 94, 0.35);
+}
+
+@media (max-width: 768px) {
+  .recordatorios-mobile-list {
+    display: flex !important;
+  }
+
+  .recordatorios-desktop-table {
+    display: none !important;
+  }
+
+  .main-content {
+    padding-bottom: 90px !important;
+  }
 }
 
 /* Modal de Historial de Pagos Responsivo */
@@ -2655,5 +2709,30 @@ a:hover {
     width: 100% !important;
     justify-content: center !important;
     text-align: center !important;
+  }
+
+  /* Recordatorios y vistas previas en móviles */
+  .btn-reset-recordatorios-wrapper {
+    width: 100% !important;
+  }
+
+  .btn-reset-recordatorios-wrapper button {
+    width: 100% !important;
+    justify-content: center !important;
+    text-align: center !important;
+  }
+
+  .message-preview {
+    padding: 12px 14px !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .message-bubble {
+    padding: 8px 10px !important;
+    font-size: 0.84rem !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
   }
 }
