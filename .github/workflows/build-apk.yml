@@ -42,8 +42,10 @@ jobs:
           cd frontend
           npx cap sync android
 
-      - name: 🔑 Dar permisos de ejecución a gradlew
-        run: chmod +x frontend/android/gradlew
+      - name: 🔑 Dar permisos de ejecución a gradlew y aceptar licencias
+        run: |
+          chmod +x frontend/android/gradlew
+          yes | sdkmanager --licenses || true
 
       - name: 📱 Compilar APK Debug
         run: |
