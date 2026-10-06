@@ -14,7 +14,6 @@ export default function HistorialPagosModal({ alumno, isOpen, onClose }: Props) 
     const pagos = useStore((s) => s.pagos);
     const registrarPago = useStore((s) => s.registrarPago);
     const marcarPendiente = useStore((s) => s.marcarPendiente);
-    const marcarEneAbrPagados = useStore((s) => s.marcarEneAbrPagados);
     const addActivity = useStore((s) => s.addActivity);
 
     const now = new Date();
@@ -134,14 +133,6 @@ export default function HistorialPagosModal({ alumno, isOpen, onClose }: Props) 
         showToast(`✅ Pago histórico guardado: ${MONTH_NAMES[formMes - 1]} ${formAnio} (${formatCurrency(montoNum)})`, 'success');
         addActivity('payment', `Pago histórico registrado: ${alumno.nombre} - ${MONTH_NAMES[formMes - 1]} ${formAnio} (${formatCurrency(montoNum)})`);
         setMostrarFormNuevo(false);
-    };
-
-    // Marcar cuotas iniciales (Enero, Febrero, Marzo, Abril) como pagadas
-    const handleMarcarEneAbr = async () => {
-        if (!alumno) return;
-        await marcarEneAbrPagados(alumno.id, anioSeleccionado);
-        showToast(`✅ Cuotas de Enero a Abril ${anioSeleccionado} marcadas como pagadas para ${alumno.nombre}`, 'success');
-        addActivity('payment', `Regularización Ene-Abr ${anioSeleccionado} como pagados: ${alumno.nombre}`);
     };
 
     // Abrir formulario para un mes específico
@@ -346,7 +337,7 @@ export default function HistorialPagosModal({ alumno, isOpen, onClose }: Props) 
                             width: '100%',
                             maxWidth: '100%',
                             boxSizing: 'border-box',
-                            overflow: 'hidden',
+                            flexShrink: 0,
                         }}
                     >
                         <div className="historial-control-bar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem', width: '100%' }}>
@@ -406,27 +397,6 @@ export default function HistorialPagosModal({ alumno, isOpen, onClose }: Props) 
 
                             {/* Botones de acción rápida */}
                             <div className="historial-quick-actions" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                                {anioSeleccionado === 2026 && (
-                                    <button
-                                        type="button"
-                                        onClick={handleMarcarEneAbr}
-                                        className="btn btn-secondary"
-                                        style={{
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: 4,
-                                            fontSize: '0.78rem',
-                                            padding: '5px 10px',
-                                            background: 'rgba(59,130,246,0.12)',
-                                            color: '#60a5fa',
-                                            borderColor: 'rgba(59,130,246,0.3)',
-                                            fontWeight: 600,
-                                        }}
-                                        title="Marcar Enero, Febrero, Marzo y Abril 2026 como pagados"
-                                    >
-                                        ⚡ Ene-Abr Pagados
-                                    </button>
-                                )}
                                 <button
                                     type="button"
                                     onClick={() => {

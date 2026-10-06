@@ -2570,6 +2570,10 @@ a:hover {
   gap: 1.25rem;
 }
 
+.historial-modal-body > * {
+  flex-shrink: 0;
+}
+
 .historial-stats-boxes {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
