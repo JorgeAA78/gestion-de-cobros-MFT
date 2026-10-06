@@ -826,27 +826,13 @@ export default function Dashboard() {
             {/* ── Modal de Edición de Alumno ─────────────────────────────────── */}
             {editAlumno && (
                 <div
-                    style={{
-                        position: 'fixed', inset: 0, zIndex: 1000,
-                        background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        padding: 'var(--space-lg)',
-                        animation: 'fadeInUp 0.25s ease',
-                    }}
+                    className="edit-alumno-modal-backdrop"
                     onClick={(e) => { if (e.target === e.currentTarget) closeEdit(); }}
                 >
-                    <div style={{
-                        background: 'var(--bg-secondary)',
-                        border: '1px solid var(--border-glass)',
-                        borderRadius: 'var(--radius-lg)',
-                        padding: 'var(--space-xl)',
-                        width: '100%',
-                        maxWidth: 520,
-                        boxShadow: '0 20px 60px rgba(0,0,0,0.6)',
-                    }}>
+                    <div className="edit-alumno-modal-content">
                         {/* Header */}
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-md)' }}>
-                            <h3 style={{ color: 'var(--accent-green)', fontFamily: 'Montserrat, sans-serif', display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>
+                        <div className="edit-alumno-modal-header">
+                            <h3 style={{ color: 'var(--accent-green)', fontFamily: 'Montserrat, sans-serif', display: 'flex', alignItems: 'center', gap: 8, margin: 0, fontSize: '1.05rem' }}>
                                 🥋 Alumno: <span style={{ fontSize: '1rem', color: '#f0fdf4', fontWeight: 600 }}>{editAlumno.nombre}</span>
                             </h3>
                             <button
@@ -857,7 +843,7 @@ export default function Dashboard() {
                         </div>
 
                         {/* Pestañas del Alumno */}
-                        <div style={{ display: 'flex', gap: '0.5rem', borderBottom: '1px solid rgba(34,197,94,0.15)', marginBottom: 'var(--space-lg)' }}>
+                        <div className="edit-alumno-modal-tabs">
                             <button
                                 type="button"
                                 onClick={() => setEditModalTab('datos')}
@@ -909,107 +895,110 @@ export default function Dashboard() {
                             </button>
                         </div>
 
-                        {/* Nombre */}
-                        <div className="form-group" style={{ marginBottom: 'var(--space-md)' }}>
-                            <label>👤 Nombre</label>
-                            <input
-                                type="text"
-                                className="form-input"
-                                value={editNombre}
-                                onChange={(e) => setEditNombre(e.target.value)}
-                                placeholder="Nombre completo"
-                            />
-                        </div>
-
-                        {/* WhatsApp */}
-                        <div className="form-group">
-                            <label>📱 WhatsApp</label>
-                            <div className="input-group">
-                                <span className="input-prefix">+54</span>
+                        {/* Body con Scroll */}
+                        <div className="edit-alumno-modal-body">
+                            {/* Nombre */}
+                            <div className="form-group" style={{ marginBottom: 0 }}>
+                                <label>👤 Nombre</label>
                                 <input
-                                    type="tel"
+                                    type="text"
                                     className="form-input"
-                                    value={editWhatsapp}
-                                    onChange={(e) => setEditWhatsapp(e.target.value)}
-                                    placeholder="11 2345 6789"
+                                    value={editNombre}
+                                    onChange={(e) => setEditNombre(e.target.value)}
+                                    placeholder="Nombre completo"
                                 />
                             </div>
-                            <p className="form-hint">Número sin 0 ni 15, con código de área. Ej: 1123456789</p>
-                        </div>
 
-                        {/* Plan y Cuota en fila */}
-                        <div className="form-row" style={{ marginBottom: 'var(--space-lg)' }}>
+                            {/* WhatsApp */}
                             <div className="form-group" style={{ marginBottom: 0 }}>
-                                <label>📋 Plan</label>
-                                <select
-                                    className="form-select"
-                                    value={editPlan}
-                                    onChange={(e) => setEditPlan(e.target.value as 'libre' | '3x')}
-                                >
-                                    <option value="libre">🔥 Libre</option>
-                                    <option value="3x">💪 3x Semana</option>
-                                </select>
-                            </div>
-                            <div className="form-group" style={{ marginBottom: 0 }}>
-                                <label>💰 Cuota $</label>
+                                <label>📱 WhatsApp</label>
                                 <div className="input-group">
-                                    <span className="input-prefix">$</span>
+                                    <span className="input-prefix">+54</span>
+                                    <input
+                                        type="tel"
+                                        className="form-input"
+                                        value={editWhatsapp}
+                                        onChange={(e) => setEditWhatsapp(e.target.value)}
+                                        placeholder="11 2345 6789"
+                                    />
+                                </div>
+                                <p className="form-hint">Número sin 0 ni 15, con código de área. Ej: 1123456789</p>
+                            </div>
+
+                            {/* Plan y Cuota en fila */}
+                            <div className="form-row" style={{ marginBottom: 0 }}>
+                                <div className="form-group" style={{ marginBottom: 0 }}>
+                                    <label>📋 Plan</label>
+                                    <select
+                                        className="form-select"
+                                        value={editPlan}
+                                        onChange={(e) => setEditPlan(e.target.value as 'libre' | '3x')}
+                                    >
+                                        <option value="libre">🔥 Libre</option>
+                                        <option value="3x">💪 3x Semana</option>
+                                    </select>
+                                </div>
+                                <div className="form-group" style={{ marginBottom: 0 }}>
+                                    <label>💰 Cuota $</label>
+                                    <div className="input-group">
+                                        <span className="input-prefix">$</span>
+                                        <input
+                                            type="number"
+                                            className="form-input"
+                                            value={editCuota}
+                                            onChange={(e) => setEditCuota(e.target.value)}
+                                            min="0"
+                                            step="500"
+                                            placeholder="25000"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Día de Vencimiento y Estado en fila */}
+                            <div className="form-row" style={{ marginBottom: 0 }}>
+                                <div className="form-group" style={{ marginBottom: 0 }}>
+                                    <label>📅 Día de Vencimiento</label>
                                     <input
                                         type="number"
                                         className="form-input"
-                                        value={editCuota}
-                                        onChange={(e) => setEditCuota(e.target.value)}
-                                        min="0"
-                                        step="500"
-                                        placeholder="25000"
+                                        min={1}
+                                        max={31}
+                                        value={editDiaVenc}
+                                        onChange={(e) => setEditDiaVenc(Math.min(31, Math.max(1, parseInt(e.target.value) || 1)))}
                                     />
+                                    <p className="form-hint">Día del mes (1-31)</p>
+                                </div>
+                                <div className="form-group" style={{ marginBottom: 0 }}>
+                                    <label>🎯 Situación</label>
+                                    <select
+                                        className="form-select"
+                                        value={editEstado}
+                                        onChange={(e) => setEditEstado(e.target.value as EstadoAlumno)}
+                                    >
+                                        {Object.entries(ESTADO_LABELS).map(([value, label]) => (
+                                            <option key={value} value={value}>{label}</option>
+                                        ))}
+                                    </select>
+                                    <p className="form-hint">Solo "Activo" recibe recordatorios</p>
                                 </div>
                             </div>
-                        </div>
 
-                        {/* Día de Vencimiento y Estado en fila */}
-                        <div className="form-row" style={{ marginBottom: 'var(--space-md)' }}>
+                            {/* Fecha de Alta / Registro */}
                             <div className="form-group" style={{ marginBottom: 0 }}>
-                                <label>📅 Día de Vencimiento</label>
+                                <label>📅 Fecha de Alta / Registro</label>
                                 <input
-                                    type="number"
+                                    type="date"
                                     className="form-input"
-                                    min={1}
-                                    max={31}
-                                    value={editDiaVenc}
-                                    onChange={(e) => setEditDiaVenc(Math.min(31, Math.max(1, parseInt(e.target.value) || 1)))}
+                                    value={editFechaRegistro}
+                                    onChange={(e) => setEditFechaRegistro(e.target.value)}
                                 />
-                                <p className="form-hint">Día del mes (1-31)</p>
-                            </div>
-                            <div className="form-group" style={{ marginBottom: 0 }}>
-                                <label>🎯 Situación</label>
-                                <select
-                                    className="form-select"
-                                    value={editEstado}
-                                    onChange={(e) => setEditEstado(e.target.value as EstadoAlumno)}
-                                >
-                                    {Object.entries(ESTADO_LABELS).map(([value, label]) => (
-                                        <option key={value} value={value}>{label}</option>
-                                    ))}
-                                </select>
-                                <p className="form-hint">Solo "Activo" recibe recordatorios</p>
+                                <p className="form-hint">Fecha en que se dio de alta al alumno</p>
                             </div>
                         </div>
 
-                        {/* Fecha de Alta / Registro */}
-                        <div className="form-group" style={{ marginBottom: 'var(--space-lg)' }}>
-                            <label>📅 Fecha de Alta / Registro</label>
-                            <input
-                                type="date"
-                                className="form-input"
-                                value={editFechaRegistro}
-                                onChange={(e) => setEditFechaRegistro(e.target.value)}
-                            />
-                            <p className="form-hint">Fecha en que se dio de alta al alumno</p>
-                        </div>
-
-                        {/* Botones */}
-                        <div style={{ display: 'flex', gap: 'var(--space-md)', marginTop: 'var(--space-xl)', justifyContent: 'flex-end' }}>
+                        {/* Footer Fijo con Botones */}
+                        <div className="edit-alumno-modal-footer">
                             <button className="btn btn-secondary" onClick={closeEdit}>Cancelar</button>
                             <button
                                 className="btn btn-primary"
