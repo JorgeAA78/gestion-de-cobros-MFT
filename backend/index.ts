@@ -504,15 +504,23 @@ app.post('/api/alumnos/delete-bulk', authMiddleware, async (req, res) => {
 app.post('/api/pagos', authMiddleware, async (req, res) => {
     try {
         const { alumnoId, mes, anio, estado, monto, fechaPago } = req.body;
+        const numMes = parseInt(String(mes), 10);
+        const numAnio = parseInt(String(anio), 10);
+        const numMonto = Number(monto) || 0;
+
+        if (!alumnoId || isNaN(numMes) || isNaN(numAnio)) {
+            return res.status(400).json({ error: 'Parámetros alumnoId, mes y anio requeridos y válidos' });
+        }
+
         if (estado === 'pagado') {
-            await marcarPagado(alumnoId, mes, anio, monto, fechaPago);
+            await marcarPagado(String(alumnoId), numMes, numAnio, numMonto, fechaPago);
         } else {
-            await marcarPendiente(alumnoId, mes, anio);
+            await marcarPendiente(String(alumnoId), numMes, numAnio);
         }
         res.json({ ok: true });
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error actualizando pago:', error);
-        res.status(500).json({ error: 'Error al actualizar pago' });
+        res.status(500).json({ error: error?.message || 'Error al actualizar pago' });
     }
 });
 

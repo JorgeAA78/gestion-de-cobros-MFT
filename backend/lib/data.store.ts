@@ -120,19 +120,50 @@ function writeDataJSON(data: DataStore) {
     fs.writeFileSync(DATA_PATH, JSON.stringify(data, null, 2), 'utf-8');
 }
 
+/**
+ * Helper para paginar y recuperar TODOS los registros de una tabla en Supabase,
+ * superando el límite por defecto de 1000 filas de PostgREST.
+ */
+async function fetchAllRows<T = any>(
+    tableName: string,
+    modifier?: (query: any) => any
+): Promise<T[]> {
+    if (!supabase) return [];
+    const PAGE_SIZE = 1000;
+    let allData: T[] = [];
+    let from = 0;
+    let hasMore = true;
+
+    while (hasMore) {
+        let query = supabase.from(tableName).select('*').range(from, from + PAGE_SIZE - 1);
+        if (modifier) {
+            query = modifier(query);
+        }
+        const { data, error } = await query;
+        if (error) {
+            console.error(`Error obteniendo filas de ${tableName} (offset ${from}):`, error);
+            break;
+        }
+        if (data && data.length > 0) {
+            allData = allData.concat(data as T[]);
+            if (data.length < PAGE_SIZE) {
+                hasMore = false;
+            } else {
+                from += PAGE_SIZE;
+            }
+        } else {
+            hasMore = false;
+        }
+    }
+    return allData;
+}
+
 // ─── Funciones de Alumnos ───────────────────────────────────────────────────
 export async function obtenerAlumnos(): Promise<Alumno[]> {
     if (isSupabaseConfigured() && supabase) {
-        const { data, error } = await supabase
-            .from('alumnos')
-            .select('*')
-            .eq('activo', true)
-            .order('nombre');
-        
-        if (error) {
-            console.error('Error obteniendo alumnos:', error);
-            return [];
-        }
+        const data = await fetchAllRows<DbAlumno>('alumnos', (q) =>
+            q.eq('activo', true).order('nombre')
+        );
         return data.map(dbToAlumno);
     }
     return readDataJSON().alumnos;
@@ -288,14 +319,7 @@ export async function actualizarAlumno(id: string, data: Partial<Omit<Alumno, 'i
 // ─── Funciones de Pagos ─────────────────────────────────────────────────────
 export async function obtenerPagos(): Promise<Pago[]> {
     if (isSupabaseConfigured() && supabase) {
-        const { data, error } = await supabase
-            .from('pagos')
-            .select('*');
-        
-        if (error) {
-            console.error('Error obteniendo pagos:', error);
-            return [];
-        }
+        const data = await fetchAllRows<DbPago>('pagos');
         return data.map(dbToPago);
     }
     return readDataJSON().pagos;
@@ -303,15 +327,16 @@ export async function obtenerPagos(): Promise<Pago[]> {
 
 export async function marcarPagado(alumnoId: string, mes: number, anio: number, monto: number, fechaPago?: string): Promise<Pago> {
     const fPago = fechaPago ? new Date(fechaPago).toISOString() : new Date().toISOString();
+    const montoNum = (typeof monto === 'number' && !isNaN(monto) && monto >= 0) ? Math.round(monto) : 0;
     if (isSupabaseConfigured() && supabase) {
         // Upsert: actualizar si existe, crear si no
         const { data, error } = await supabase
             .from('pagos')
             .upsert({
                 alumno_id: alumnoId,
-                mes,
-                anio,
-                monto,
+                mes: Number(mes),
+                anio: Number(anio),
+                monto: montoNum,
                 estado: 'pagado',
                 fecha_pago: fPago
             }, { onConflict: 'alumno_id,mes,anio' })
@@ -320,7 +345,7 @@ export async function marcarPagado(alumnoId: string, mes: number, anio: number, 
         
         if (error) {
             console.error('Error marcando pago:', error);
-            throw new Error('Error al marcar pago');
+            throw new Error('Error al marcar pago: ' + error.message);
         }
         return dbToPago(data);
     }
@@ -330,14 +355,17 @@ export async function marcarPagado(alumnoId: string, mes: number, anio: number, 
     const existente = store.pagos.find(p => p.alumnoId === alumnoId && p.mes === mes && p.anio === anio);
     if (existente) {
         existente.estado = 'pagado';
-        existente.monto = monto;
+        existente.monto = montoNum;
         existente.fechaPago = fPago;
         writeDataJSON(store);
         return existente;
     }
     const nuevoPago: Pago = {
         id: Date.now().toString(36),
-        alumnoId, mes, anio, monto,
+        alumnoId,
+        mes: Number(mes),
+        anio: Number(anio),
+        monto: montoNum,
         estado: 'pagado',
         fechaPago: fPago
     };
@@ -543,13 +571,7 @@ export async function guardarConfig(config: Config): Promise<void> {
 // ─── Funciones de Recordatorios Enviados ────────────────────────────────────
 export async function obtenerRecordatoriosEnviados(): Promise<RecordatoriosMap> {
     if (isSupabaseConfigured() && supabase) {
-        const { data, error } = await supabase
-            .from('recordatorios_enviados')
-            .select('*');
-        if (error) {
-            console.error('Error obteniendo recordatorios:', error);
-            return {};
-        }
+        const data = await fetchAllRows<DbRecordatorioEnviado>('recordatorios_enviados');
         const map: RecordatoriosMap = {};
         for (const r of data) {
             const key = `${r.alumno_id}_${r.mes}_${r.anio}`;

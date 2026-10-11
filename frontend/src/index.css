@@ -2805,6 +2805,7 @@ a:hover {
     box-sizing: border-box !important;
     overflow: hidden !important;
   }
+}
 
 /* Modal de Edición de Alumno Base */
 .edit-alumno-modal-backdrop {

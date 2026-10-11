@@ -23,8 +23,12 @@ async function apiGet<T>(path: string): Promise<T | null> {
         if (res.ok) return res.json();
         if (res.status === 401) {
             useAuthStore.getState().logout();
+        } else {
+            console.warn(`[API] GET ${path} error: ${res.status} ${res.statusText}`);
         }
-    } catch { }
+    } catch (e) {
+        console.error(`[API] Error de red en GET ${path}:`, e);
+    }
     return null;
 }
 
@@ -38,8 +42,14 @@ async function apiPost(path: string, body: any) {
         });
         if (res.status === 401) {
             useAuthStore.getState().logout();
+        } else if (!res.ok) {
+            console.error(`[API] POST ${path} error: ${res.status} ${res.statusText}`);
         }
-    } catch { }
+        return res.ok;
+    } catch (e) {
+        console.error(`[API] Error de red en POST ${path}:`, e);
+        return false;
+    }
 }
 
 async function apiPut(path: string, body: any) {
@@ -52,8 +62,14 @@ async function apiPut(path: string, body: any) {
         });
         if (res.status === 401) {
             useAuthStore.getState().logout();
+        } else if (!res.ok) {
+            console.error(`[API] PUT ${path} error: ${res.status} ${res.statusText}`);
         }
-    } catch { }
+        return res.ok;
+    } catch (e) {
+        console.error(`[API] Error de red en PUT ${path}:`, e);
+        return false;
+    }
 }
 
 async function apiDelete(path: string) {
@@ -65,8 +81,14 @@ async function apiDelete(path: string) {
         });
         if (res.status === 401) {
             useAuthStore.getState().logout();
+        } else if (!res.ok) {
+            console.error(`[API] DELETE ${path} error: ${res.status} ${res.statusText}`);
         }
-    } catch { }
+        return res.ok;
+    } catch (e) {
+        console.error(`[API] Error de red en DELETE ${path}:`, e);
+        return false;
+    }
 }
 
 function normalizeRecordatorios(data: any): RecordatorioMap {
