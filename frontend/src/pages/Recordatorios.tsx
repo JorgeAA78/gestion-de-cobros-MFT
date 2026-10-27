@@ -32,6 +32,7 @@ export default function Recordatorios() {
     const MAX_LOTE = 20;
 
     const [mes, setMes] = useState(mesCurrent);
+    const [previewCat, setPreviewCat] = useState<'adulto' | 'kids'>('adulto');
     const plantilla = 'recordatorio';
 
     const sending = Boolean(statusManual?.enProgreso);
@@ -113,13 +114,20 @@ export default function Recordatorios() {
         }
     };
 
-    const sampleMsg = pendientes.length > 0
-        ? buildMessage(PREVIEW_TEMPLATES[plantilla], {
-            nombre: pendientes[0].nombre,
-            monto: formatCurrency(pendientes[0].cuota),
+    const sampleAlumno = useMemo(() => {
+        const match = pendientes.find((a) => (a.categoria || 'adulto') === previewCat);
+        return match || pendientes[0] || alumnos[0];
+    }, [pendientes, alumnos, previewCat]);
+
+    const activeTemplateKey = previewCat === 'kids' ? 'recordatorio_kids' : 'recordatorio';
+
+    const sampleMsg = sampleAlumno
+        ? buildMessage(PREVIEW_TEMPLATES[activeTemplateKey] || PREVIEW_TEMPLATES['recordatorio'], {
+            nombre: sampleAlumno.nombre,
+            monto: formatCurrency(sampleAlumno.cuota),
             mes: MONTH_NAMES[mes - 1],
-            plan: pendientes[0].plan === 'libre' ? 'Libre' : '3 Veces por Semana',
-            fecha: `${pendientes[0].diaVencimiento ?? 10} de ${MONTH_NAMES[mes - 1]}`,
+            plan: sampleAlumno.plan === 'libre' ? 'Libre' : '3 Veces por Semana',
+            fecha: `${sampleAlumno.diaVencimiento ?? 10} de ${MONTH_NAMES[mes - 1]}`,
         })
         : '';
 
@@ -213,7 +221,33 @@ export default function Recordatorios() {
 
                 {/* Template */}
                 <div className="card mt-2" style={{ overflow: 'hidden', width: '100%', boxSizing: 'border-box' }}>
-                    <h3 className="section-title">💬 Vista Previa del Recordatorio</h3>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10, marginBottom: 'var(--space-md)' }}>
+                        <h3 className="section-title" style={{ margin: 0 }}>💬 Vista Previa del Recordatorio</h3>
+                        <div style={{ display: 'flex', gap: 6 }}>
+                            <button
+                                type="button"
+                                className={`btn ${previewCat === 'adulto' ? 'btn-primary' : 'btn-secondary'}`}
+                                onClick={() => setPreviewCat('adulto')}
+                                style={{ padding: '4px 10px', fontSize: '0.78rem' }}
+                            >
+                                🥋 Adulto (recordatorio)
+                            </button>
+                            <button
+                                type="button"
+                                className={`btn ${previewCat === 'kids' ? 'btn-primary' : 'btn-secondary'}`}
+                                onClick={() => setPreviewCat('kids')}
+                                style={{
+                                    padding: '4px 10px',
+                                    fontSize: '0.78rem',
+                                    borderColor: previewCat === 'kids' ? '#38bdf8' : 'rgba(56,189,248,0.3)',
+                                    background: previewCat === 'kids' ? '#0284c7' : 'rgba(56,189,248,0.08)',
+                                    color: previewCat === 'kids' ? '#fff' : '#38bdf8'
+                                }}
+                            >
+                                🧒 Kids (recordatorio_kids)
+                            </button>
+                        </div>
+                    </div>
 
                     {sampleMsg && (
                         <div className="message-preview-container">
@@ -280,6 +314,10 @@ export default function Recordatorios() {
                                             </div>
                                         </div>
 
+                                        <div style={{ marginTop: 4, fontSize: '0.72rem', color: a.categoria === 'kids' ? '#38bdf8' : 'rgba(134,239,172,0.8)' }}>
+                                            📲 Plantilla: <strong>{a.categoria === 'kids' ? '🧒 recordatorio_kids' : '🥋 recordatorio'}</strong>
+                                        </div>
+
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8, gap: 8, borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 6, flexWrap: 'wrap' }}>
                                             <a
                                                 href={`https://wa.me/${a.whatsapp}`}
@@ -317,12 +355,12 @@ export default function Recordatorios() {
                     <div className="recordatorios-desktop-table" style={{ overflowX: 'auto' }}>
                         <table className="preview-table">
                             <thead>
-                                <tr><th>#</th><th>Nombre</th><th>WhatsApp</th><th>Plan</th><th>Cuota</th><th>Estado</th></tr>
+                                <tr><th>#</th><th>Nombre</th><th>WhatsApp</th><th>Plan</th><th>Cuota</th><th>Plantilla YCloud</th><th>Estado</th></tr>
                             </thead>
                             <tbody>
                                 {pendientes.length === 0 ? (
                                     <tr>
-                                        <td colSpan={6} style={{ textAlign: 'center', color: 'var(--text-dim)', padding: 'var(--space-xl)' }}>
+                                        <td colSpan={7} style={{ textAlign: 'center', color: 'var(--text-dim)', padding: 'var(--space-xl)' }}>
                                             🎉 ¡Todos los alumnos pagaron {MONTH_NAMES[mes - 1]}!
                                         </td>
                                     </tr>
@@ -357,6 +395,17 @@ export default function Recordatorios() {
                                             <td>+{a.whatsapp}</td>
                                             <td>{a.plan === 'libre' ? '🔥 Libre' : '💪 3x'}</td>
                                             <td>{formatCurrency(a.cuota)}</td>
+                                            <td>
+                                                {a.categoria === 'kids' ? (
+                                                    <span className="badge" style={{ background: 'rgba(56,189,248,0.15)', color: '#38bdf8', border: '1px solid rgba(56,189,248,0.3)', fontSize: '0.72rem' }}>
+                                                        🧒 recordatorio_kids
+                                                    </span>
+                                                ) : (
+                                                    <span className="badge" style={{ background: 'rgba(34,197,94,0.1)', color: '#4ade80', border: '1px solid rgba(34,197,94,0.3)', fontSize: '0.72rem' }}>
+                                                        🥋 recordatorio
+                                                    </span>
+                                                )}
+                                            </td>
                                             <td>
                                                 <span
                                                     className={`badge ${displayStatus === 'manual_sent' || displayStatus === 'auto_sent' ? 'pagado' : displayStatus === 'error' ? 'vencido' : 'pendiente'}`}
