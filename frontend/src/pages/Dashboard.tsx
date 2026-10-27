@@ -1,5 +1,5 @@
 import { useStore } from '../store/useStore';
-import { MONTH_NAMES, ESTADO_LABELS, type EstadoAlumno, type Alumno } from '../types';
+import { MONTH_NAMES, ESTADO_LABELS, type EstadoAlumno, type Alumno, type CategoriaAlumno } from '../types';
 import { formatCurrency, formatWhatsApp, sanitizeInput } from '../services/ycloud';
 import { useState, useEffect, useMemo } from 'react';
 import { showToast } from '../components/Toast';
@@ -76,6 +76,7 @@ export default function Dashboard() {
     const [busqueda, setBusqueda] = useState('');
     const [seleccionados, setSeleccionados] = useState<string[]>([]);
     const [tabSituacion, setTabSituacion] = useState<'todos' | EstadoAlumno>('activo');
+    const [filtroCategoria, setFiltroCategoria] = useState<'todos' | CategoriaAlumno>('todos');
     
     // Detección robusta de dispositivos móviles para mostrar tarjetas por defecto
     const [vistaModo, setVistaModo] = useState<'tarjetas' | 'tabla'>(() => {
@@ -124,6 +125,9 @@ export default function Dashboard() {
     const [editDiaVenc, setEditDiaVenc] = useState(5);
     const [editPlan, setEditPlan] = useState<'libre' | '3x'>('libre');
     const [editEstado, setEditEstado] = useState<EstadoAlumno>('activo');
+    const [editCategoria, setEditCategoria] = useState<CategoriaAlumno>('adulto');
+    const [editEdad, setEditEdad] = useState<string>('');
+    const [editTutor, setEditTutor] = useState<string>('');
     const [editFechaRegistro, setEditFechaRegistro] = useState('');
     const [editModalTab, setEditModalTab] = useState<'datos' | 'historial'>('datos');
 
@@ -144,6 +148,9 @@ export default function Dashboard() {
         setEditDiaVenc(a.diaVencimiento ?? config.diaEnvio ?? 5);
         setEditPlan(a.plan);
         setEditEstado(a.estado || 'activo');
+        setEditCategoria(a.categoria || 'adulto');
+        setEditEdad(a.edad ? String(a.edad) : '');
+        setEditTutor(a.tutor || '');
         const fechaAlta = a.fechaRegistro ? new Date(a.fechaRegistro).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
         setEditFechaRegistro(fechaAlta);
     };
@@ -162,6 +169,9 @@ export default function Dashboard() {
             diaVencimiento: editDiaVenc,
             plan: editPlan,
             estado: editEstado,
+            categoria: editCategoria,
+            edad: editEdad ? parseInt(editEdad, 10) : undefined,
+            tutor: editTutor.trim() ? sanitizeInput(editTutor) : undefined,
             fechaRegistro: editFechaRegistro ? new Date(editFechaRegistro + 'T12:00:00Z').toISOString() : editAlumno.fechaRegistro,
         });
         showToast(`✅ Alumno ${sanitizedNombre} actualizado`, 'success');
@@ -170,10 +180,20 @@ export default function Dashboard() {
 
     // Conteo por situación para pestañas
     const conteosPorEstado = useMemo(() => {
-        const counts: Record<string, number> = { activo: 0, becado: 0, suspendido: 0, inactivo: 0 };
+        const counts: Record<string, number> = { activo: 0, becado: 0, inactivo: 0 };
         alumnos.forEach((a) => {
             const st = a.estado || 'activo';
             counts[st] = (counts[st] || 0) + 1;
+        });
+        return counts;
+    }, [alumnos]);
+
+    // Conteo por categoría (Adultos vs Kids)
+    const conteosPorCategoria = useMemo(() => {
+        const counts = { adulto: 0, kids: 0 };
+        alumnos.forEach((a) => {
+            const cat = a.categoria || 'adulto';
+            counts[cat] = (counts[cat] || 0) + 1;
         });
         return counts;
     }, [alumnos]);
@@ -197,13 +217,17 @@ export default function Dashboard() {
         if (tabSituacion !== 'todos') {
             list = list.filter((a) => (a.estado || 'activo') === tabSituacion);
         }
+        if (filtroCategoria !== 'todos') {
+            list = list.filter((a) => (a.categoria || 'adulto') === filtroCategoria);
+        }
         if (!busqueda.trim()) return list;
         const q = busqueda.toLowerCase();
         return list.filter((a) =>
             a.nombre.toLowerCase().includes(q) ||
-            a.whatsapp.includes(q)
+            a.whatsapp.includes(q) ||
+            (a.tutor && a.tutor.toLowerCase().includes(q))
         );
-    }, [alumnos, tabSituacion, busqueda]);
+    }, [alumnos, tabSituacion, filtroCategoria, busqueda]);
 
     const todosSeleccionados = filteredAlumnos.length > 0 && filteredAlumnos.every(a => seleccionados.includes(a.id));
     
@@ -404,53 +428,84 @@ export default function Dashboard() {
                     </div>
                 </div>
 
-                {/* Pestañas de Situación de Alumnos */}
-                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: 'var(--space-lg)', paddingBottom: '0.75rem', borderBottom: '1px solid rgba(34,197,94,0.1)' }}>
-                    <button
-                        type="button"
-                        onClick={() => setTabSituacion('todos')}
-                        className={`btn ${tabSituacion === 'todos' ? 'btn-primary' : 'btn-secondary'}`}
-                        style={{ padding: '5px 14px', fontSize: '0.82rem' }}
-                    >
-                        👥 Todos ({alumnos.length})
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => setTabSituacion('activo')}
-                        className={`btn ${tabSituacion === 'activo' ? 'btn-primary' : 'btn-secondary'}`}
-                        style={{
-                            padding: '5px 14px',
-                            fontSize: '0.82rem',
-                            borderColor: tabSituacion === 'activo' ? undefined : 'rgba(34,197,94,0.3)',
-                            background: tabSituacion === 'activo' ? undefined : 'rgba(34,197,94,0.06)',
-                        }}
-                    >
-                        ✅ Activos ({conteosPorEstado.activo})
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => setTabSituacion('becado')}
-                        className={`btn ${tabSituacion === 'becado' ? 'btn-primary' : 'btn-secondary'}`}
-                        style={{ padding: '5px 14px', fontSize: '0.82rem' }}
-                    >
-                        🎓 Becados ({conteosPorEstado.becado})
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => setTabSituacion('suspendido')}
-                        className={`btn ${tabSituacion === 'suspendido' ? 'btn-primary' : 'btn-secondary'}`}
-                        style={{ padding: '5px 14px', fontSize: '0.82rem' }}
-                    >
-                        ⏸️ Suspendidos ({conteosPorEstado.suspendido})
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => setTabSituacion('inactivo')}
-                        className={`btn ${tabSituacion === 'inactivo' ? 'btn-primary' : 'btn-secondary'}`}
-                        style={{ padding: '5px 14px', fontSize: '0.82rem' }}
-                    >
-                        ❌ Inactivos ({conteosPorEstado.inactivo})
-                    </button>
+                {/* Filtros de Categoría y Situación de Alumnos */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', marginBottom: 'var(--space-lg)', paddingBottom: '0.75rem', borderBottom: '1px solid rgba(34,197,94,0.1)' }}>
+                    {/* Filtro por Categoría: Todos / Adultos / Kids */}
+                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--text-dim)', fontWeight: 600, marginRight: 4 }}>Categoría:</span>
+                        <button
+                            type="button"
+                            onClick={() => setFiltroCategoria('todos')}
+                            className={`btn ${filtroCategoria === 'todos' ? 'btn-primary' : 'btn-secondary'}`}
+                            style={{ padding: '4px 12px', fontSize: '0.8rem' }}
+                        >
+                            Todos ({alumnos.length})
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setFiltroCategoria('adulto')}
+                            className={`btn ${filtroCategoria === 'adulto' ? 'btn-primary' : 'btn-secondary'}`}
+                            style={{ padding: '4px 12px', fontSize: '0.8rem' }}
+                        >
+                            🥋 Adultos ({conteosPorCategoria.adulto})
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setFiltroCategoria('kids')}
+                            className={`btn ${filtroCategoria === 'kids' ? 'btn-primary' : 'btn-secondary'}`}
+                            style={{ 
+                                padding: '4px 12px', 
+                                fontSize: '0.8rem',
+                                borderColor: filtroCategoria === 'kids' ? '#38bdf8' : 'rgba(56,189,248,0.3)',
+                                background: filtroCategoria === 'kids' ? '#0284c7' : 'rgba(56,189,248,0.08)',
+                                color: filtroCategoria === 'kids' ? '#fff' : '#38bdf8'
+                            }}
+                        >
+                            🧒 Kids ({conteosPorCategoria.kids})
+                        </button>
+                    </div>
+
+                    {/* Filtro por Estado: Todos / Activos / Becados / Inactivos */}
+                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--text-dim)', fontWeight: 600, marginRight: 4 }}>Situación:</span>
+                        <button
+                            type="button"
+                            onClick={() => setTabSituacion('todos')}
+                            className={`btn ${tabSituacion === 'todos' ? 'btn-primary' : 'btn-secondary'}`}
+                            style={{ padding: '4px 12px', fontSize: '0.8rem' }}
+                        >
+                            👥 Todos
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setTabSituacion('activo')}
+                            className={`btn ${tabSituacion === 'activo' ? 'btn-primary' : 'btn-secondary'}`}
+                            style={{
+                                padding: '4px 12px',
+                                fontSize: '0.8rem',
+                                borderColor: tabSituacion === 'activo' ? undefined : 'rgba(34,197,94,0.3)',
+                                background: tabSituacion === 'activo' ? undefined : 'rgba(34,197,94,0.06)',
+                            }}
+                        >
+                            ✅ Activos ({conteosPorEstado.activo})
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setTabSituacion('becado')}
+                            className={`btn ${tabSituacion === 'becado' ? 'btn-primary' : 'btn-secondary'}`}
+                            style={{ padding: '4px 12px', fontSize: '0.8rem' }}
+                        >
+                            🎓 Becados ({conteosPorEstado.becado})
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setTabSituacion('inactivo')}
+                            className={`btn ${tabSituacion === 'inactivo' ? 'btn-primary' : 'btn-secondary'}`}
+                            style={{ padding: '4px 12px', fontSize: '0.8rem' }}
+                        >
+                            ❌ Inactivos ({conteosPorEstado.inactivo})
+                        </button>
+                    </div>
                 </div>
 
                 {/* ── Vista en Tarjetas para Móviles ── */}
@@ -491,13 +546,18 @@ export default function Dashboard() {
                                                 >
                                                     {a.nombre}
                                                 </span>
+                                                {a.categoria === 'kids' && (
+                                                    <span className="badge" style={{ fontSize: '0.68rem', padding: '1px 6px', background: 'rgba(56,189,248,0.15)', color: '#38bdf8', border: '1px solid rgba(56,189,248,0.3)' }}>
+                                                        🧒 Kids {a.edad ? `(${a.edad}a)` : ''}
+                                                    </span>
+                                                )}
                                             </div>
                                             <span className={`badge ${estadoPago}`} style={{ fontSize: '0.72rem', padding: '2px 8px' }}>
                                                 {estadoPago === 'pagado' ? '✓ Pagado' : estadoPago === 'vencido' ? '✗ Vencido' : '⏳ Pendiente'}
                                             </span>
                                         </div>
 
-                                        {/* Chips: Plan, Cuota, Alta, Situación */}
+                                        {/* Chips: Plan, Cuota, Alta, Tutor, Situación */}
                                         <div className="alumno-mobile-chips">
                                             <span className="alumno-chip plan">
                                                 {a.plan === 'libre' ? '🔥 Libre' : '💪 3x Sem.'}
@@ -505,6 +565,11 @@ export default function Dashboard() {
                                             <span className="alumno-chip">
                                                 💰 <strong>{formatCurrency(a.cuota)}</strong> (día {a.diaVencimiento ?? config.diaEnvio ?? 5})
                                             </span>
+                                            {a.categoria === 'kids' && a.tutor && (
+                                                <span className="alumno-chip" style={{ color: '#38bdf8', borderColor: 'rgba(56,189,248,0.3)' }}>
+                                                    👤 Tutor: {a.tutor}
+                                                </span>
+                                            )}
                                             {fechaAltaFormatted && (
                                                 <span className="alumno-chip alta" title="Fecha en que se dio de alta">
                                                     📅 Alta: {fechaAltaFormatted}
@@ -518,9 +583,12 @@ export default function Dashboard() {
                                                     padding: '2px 6px',
                                                     fontSize: '0.72rem',
                                                     borderRadius: 6,
-                                                    background: estadoAlumno === 'activo' ? 'rgba(34,197,94,0.1)' : 'rgba(245,158,11,0.1)',
-                                                    borderColor: estadoAlumno === 'activo' ? 'rgba(34,197,94,0.3)' : 'rgba(245,158,11,0.3)',
-                                                    color: estadoAlumno === 'activo' ? '#4ade80' : '#fbbf24',
+                                                    background: estadoAlumno === 'activo' ? 'rgba(34,197,94,0.1)' : 
+                                                               estadoAlumno === 'becado' ? 'rgba(168,85,247,0.1)' : 'rgba(239,68,68,0.1)',
+                                                    borderColor: estadoAlumno === 'activo' ? 'rgba(34,197,94,0.3)' : 
+                                                                 estadoAlumno === 'becado' ? 'rgba(168,85,247,0.3)' : 'rgba(239,68,68,0.3)',
+                                                    color: estadoAlumno === 'activo' ? '#4ade80' : 
+                                                           estadoAlumno === 'becado' ? '#c084fc' : '#f87171',
                                                     width: 'auto',
                                                     minWidth: 85,
                                                     maxWidth: 120,
@@ -669,7 +737,19 @@ export default function Dashboard() {
                                             />
                                         </td>
                                         <td>
-                                            <strong>{a.nombre}</strong>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                                <strong>{a.nombre}</strong>
+                                                {a.categoria === 'kids' && (
+                                                    <span className="badge" style={{ fontSize: '0.68rem', padding: '1px 6px', background: 'rgba(56,189,248,0.15)', color: '#38bdf8', border: '1px solid rgba(56,189,248,0.3)' }}>
+                                                        🧒 Kids {a.edad ? `(${a.edad} años)` : ''}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            {a.categoria === 'kids' && a.tutor && (
+                                                <div style={{ fontSize: '0.72rem', color: '#38bdf8', marginTop: 2 }}>
+                                                    👤 Tutor: {a.tutor}
+                                                </div>
+                                            )}
                                             {a.fechaRegistro && (
                                                 <div style={{ fontSize: '0.72rem', color: 'rgba(134,239,172,0.7)', marginTop: 2 }}>
                                                     📅 Alta: {new Date(a.fechaRegistro).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
@@ -731,11 +811,9 @@ export default function Dashboard() {
                                                     fontSize: '0.75rem', 
                                                     minWidth: 100,
                                                     background: estadoAlumno === 'activo' ? 'rgba(34,197,94,0.1)' : 
-                                                               estadoAlumno === 'becado' ? 'rgba(168,85,247,0.1)' :
-                                                               estadoAlumno === 'suspendido' ? 'rgba(245,158,11,0.1)' : 'rgba(239,68,68,0.1)',
+                                                               estadoAlumno === 'becado' ? 'rgba(168,85,247,0.1)' : 'rgba(239,68,68,0.1)',
                                                     borderColor: estadoAlumno === 'activo' ? 'rgba(34,197,94,0.3)' : 
-                                                                 estadoAlumno === 'becado' ? 'rgba(168,85,247,0.3)' :
-                                                                 estadoAlumno === 'suspendido' ? 'rgba(245,158,11,0.3)' : 'rgba(239,68,68,0.3)',
+                                                                 estadoAlumno === 'becado' ? 'rgba(168,85,247,0.3)' : 'rgba(239,68,68,0.3)',
                                                 }}
                                             >
                                                 {Object.entries(ESTADO_LABELS).map(([value, label]) => (
@@ -983,6 +1061,57 @@ export default function Dashboard() {
                                     <p className="form-hint">Solo "Activo" recibe recordatorios</p>
                                 </div>
                             </div>
+
+                            {/* Categoría y Edad */}
+                            <div className="form-row" style={{ marginBottom: 0 }}>
+                                <div className="form-group" style={{ marginBottom: 0 }}>
+                                    <label>🎯 Categoría</label>
+                                    <select
+                                        className="form-select"
+                                        value={editCategoria}
+                                        onChange={(e) => setEditCategoria(e.target.value as CategoriaAlumno)}
+                                    >
+                                        <option value="adulto">🥋 Adulto (+13 años)</option>
+                                        <option value="kids">🧒 Kids (5 a 12 años)</option>
+                                    </select>
+                                    <p className="form-hint">Define qué plantilla y cuenta recibe</p>
+                                </div>
+                                <div className="form-group" style={{ marginBottom: 0 }}>
+                                    <label>🎂 Edad (Años)</label>
+                                    <input
+                                        type="number"
+                                        className="form-input"
+                                        value={editEdad}
+                                        onChange={(e) => {
+                                            setEditEdad(e.target.value);
+                                            const n = parseInt(e.target.value, 10);
+                                            if (!isNaN(n)) {
+                                                if (n >= 5 && n <= 12) setEditCategoria('kids');
+                                                else if (n > 12) setEditCategoria('adulto');
+                                            }
+                                        }}
+                                        min="3"
+                                        max="99"
+                                        placeholder="Ej: 8"
+                                    />
+                                    <p className="form-hint">Opcional</p>
+                                </div>
+                            </div>
+
+                            {/* Tutor (si es Kids) */}
+                            {editCategoria === 'kids' && (
+                                <div className="form-group" style={{ marginBottom: 0 }}>
+                                    <label>👤 Nombre del Padre / Madre / Tutor</label>
+                                    <input
+                                        type="text"
+                                        className="form-input"
+                                        value={editTutor}
+                                        onChange={(e) => setEditTutor(e.target.value)}
+                                        placeholder="Ej: Carolina Gómez (Madre)"
+                                    />
+                                    <p className="form-hint">WhatsApp registrado debe pertenecer al tutor</p>
+                                </div>
+                            )}
 
                             {/* Fecha de Alta / Registro */}
                             <div className="form-group" style={{ marginBottom: 0 }}>

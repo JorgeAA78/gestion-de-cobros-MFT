@@ -7,6 +7,8 @@ import { formatCurrency, buildMessage } from '../services/ycloud';
 const PREVIEW_TEMPLATES: Record<string, string> = {
     disponible: `¡Hola {nombre}! 👋 \n\nTe recordamos que la cuota de {mes} ya está disponible para abonar:\n\n💰 Monto: {monto}\n📋 Plan: {plan}\n📅 Fecha límite: {fecha}\n\nAlias: mutantesbjj\na nombre de: Pablo Sebastian Echazu Bloser\n\nPor favor, enviar comprobante al realizar el pago\n\n¡Te esperamos en el tatami! 💪\n\nMutantes Fight Team - BJJ`,
     recordatorio: `¡Hola {nombre}! 👋 \n\nTe recordamos que la cuota de {mes} está pendiente:\n\n💰 Monto: {monto}\n📋 Plan: {plan}\n\nAlias: mutantesbjj\na nombre de: Pablo Sebastian Echazu Bloser\n\nPor favor, enviar comprobante al realizar el pago\n\n¡Te esperamos en el tatami! 💪 \n\nMutantes Fight Team - BJJ`,
+    disponible_kids: `¡Hola {nombre}! 👋 (Kids)\n\nTe recordamos que la cuota de {mes} ya está disponible para abonar:\n\n💰 Monto: {monto}\n📋 Plan: {plan}\n📅 Fecha límite: {fecha}\n\n[Cuenta Bancaria Kids]\nPor favor, enviar comprobante al realizar el pago\n\n¡Te esperamos en el tatami! 💪\n\nMutantes Fight Team - BJJ`,
+    recordatorio_kids: `¡Hola {nombre}! 👋 (Kids)\n\nTe recordamos que la cuota de {mes} está pendiente:\n\n💰 Monto: {monto}\n📋 Plan: {plan}\n\n[Cuenta Bancaria Kids]\nPor favor, enviar comprobante al realizar el pago\n\n¡Te esperamos en el tatami! 💪\n\nMutantes Fight Team - BJJ`,
 };
 
 export default function Recordatorios() {
@@ -262,6 +264,11 @@ export default function Recordatorios() {
                                                 <strong style={{ fontSize: '0.92rem', color: '#f0fdf4', wordBreak: 'break-word' }}>
                                                     {a.nombre}
                                                 </strong>
+                                                {a.categoria === 'kids' && (
+                                                    <span className="badge" style={{ fontSize: '0.65rem', padding: '1px 5px', background: 'rgba(56,189,248,0.15)', color: '#38bdf8', border: '1px solid rgba(56,189,248,0.3)' }}>
+                                                        🧒 Kids
+                                                    </span>
+                                                )}
                                             </div>
                                             <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
                                                 <span className="badge" style={{ fontSize: '0.7rem', padding: '2px 6px' }}>
@@ -339,7 +346,14 @@ export default function Recordatorios() {
                                     return (
                                         <tr key={a.id}>
                                             <td>{i + 1}</td>
-                                            <td><strong>{a.nombre}</strong></td>
+                                            <td>
+                                                <strong>{a.nombre}</strong>
+                                                {a.categoria === 'kids' && (
+                                                    <span className="badge" style={{ fontSize: '0.68rem', padding: '1px 6px', background: 'rgba(56,189,248,0.15)', color: '#38bdf8', border: '1px solid rgba(56,189,248,0.3)', marginLeft: 6 }}>
+                                                        🧒 Kids
+                                                    </span>
+                                                )}
+                                            </td>
                                             <td>+{a.whatsapp}</td>
                                             <td>{a.plan === 'libre' ? '🔥 Libre' : '💪 3x'}</td>
                                             <td>{formatCurrency(a.cuota)}</td>

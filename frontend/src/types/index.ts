@@ -1,4 +1,6 @@
-export type EstadoAlumno = 'activo' | 'becado' | 'suspendido' | 'inactivo';
+export type EstadoAlumno = 'activo' | 'becado' | 'inactivo';
+
+export type CategoriaAlumno = 'adulto' | 'kids';
 
 export type RecordatorioTipo = 'manual' | 'primer_recordatorio' | 'segundo_recordatorio';
 
@@ -13,6 +15,9 @@ export interface Alumno {
     cuota: number;
     nivel: 'blanco' | 'gris' | 'amarillo' | 'azul' | 'morado' | 'marron' | 'negro';
     estado: EstadoAlumno; // activo = recibe recordatorios, otros = no recibe
+    categoria?: CategoriaAlumno; // 'adulto' | 'kids' (5-12 años)
+    edad?: number;
+    tutor?: string; // Nombre del padre / tutor
     notas?: string;
     fechaRegistro: string;
     diaVencimiento?: number; // día del mes en que vence su cuota (1-31). Si no se define, usa diaEnvio global.
@@ -21,7 +26,6 @@ export interface Alumno {
 export const ESTADO_LABELS: Record<EstadoAlumno, string> = {
     activo: '✅ Activo',
     becado: '🎓 Becado',
-    suspendido: '⏸️ Suspendido',
     inactivo: '❌ Inactivo',
 };
 
@@ -40,6 +44,7 @@ export interface AppConfig {
     diaEnvio: number;
     mensajePlantilla: string;
     datosPago: string;
+    datosPagoKids?: string;
 }
 
 export interface ActivityLog {

@@ -17,7 +17,7 @@ export function sanitizeInput(str: string): string {
 
 export async function sendWhatsAppTemplate(
     to: string,
-    template: 'bienvenida' | 'disponible' | 'recordatorio',
+    template: 'bienvenida' | 'disponible' | 'recordatorio' | 'disponible_kids' | 'recordatorio_kids',
     vars: string[]
 ): Promise<{ success: boolean; error?: string }> {
     try {

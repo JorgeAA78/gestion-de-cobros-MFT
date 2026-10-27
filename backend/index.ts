@@ -292,7 +292,11 @@ async function envioAutomatico() {
         // Usar el día de vencimiento individual del alumno
         const diaVenc = a.diaVencimiento ?? DIA_VENCIMIENTO_DEFAULT;
 
-        const templateName = esPrimerEnvio ? 'disponible' : 'recordatorio';
+        const esKids = a.categoria === 'kids';
+        const templateName = esPrimerEnvio
+            ? (esKids ? 'disponible_kids' : 'disponible')
+            : (esKids ? 'recordatorio_kids' : 'recordatorio');
+
         const params = esPrimerEnvio
             ? [
                 a.nombre,
@@ -382,7 +386,7 @@ app.put('/api/data', authMiddleware, async (req, res) => {
 // POST alumno
 app.post('/api/alumnos', authMiddleware, async (req, res) => {
     try {
-        const { nombre, whatsapp, plan, cuota, diaVencimiento, estado, notas, fechaRegistro } = req.body;
+        const { nombre, whatsapp, plan, cuota, diaVencimiento, estado, categoria, edad, tutor, notas, fechaRegistro } = req.body;
         
         if (!nombre || typeof nombre !== 'string' || nombre.trim().length === 0) {
             return res.status(400).json({ error: 'Nombre inválido' });
@@ -404,6 +408,9 @@ app.post('/api/alumnos', authMiddleware, async (req, res) => {
             cuota,
             diaVencimiento: typeof diaVencimiento === 'number' ? diaVencimiento : 5,
             estado: sanitizeString(estado || 'activo') as Alumno['estado'],
+            categoria: categoria === 'kids' ? ('kids' as const) : ('adulto' as const),
+            edad: typeof edad === 'number' ? edad : undefined,
+            tutor: tutor ? sanitizeString(tutor) : undefined,
             notas: notas ? sanitizeString(notas) : undefined,
             fechaRegistro: fechaRegistro ? sanitizeString(fechaRegistro) : undefined
         };
@@ -457,6 +464,15 @@ app.put('/api/alumnos/:id', authMiddleware, async (req, res) => {
         }
         if (data.estado !== undefined) {
             updateData.estado = sanitizeString(data.estado);
+        }
+        if (data.categoria !== undefined) {
+            updateData.categoria = data.categoria === 'kids' ? 'kids' : 'adulto';
+        }
+        if (data.edad !== undefined) {
+            updateData.edad = typeof data.edad === 'number' ? data.edad : null;
+        }
+        if (data.tutor !== undefined) {
+            updateData.tutor = data.tutor ? sanitizeString(data.tutor) : null;
         }
         if (data.notas !== undefined) {
             updateData.notas = data.notas ? sanitizeString(data.notas) : null;
@@ -718,9 +734,12 @@ app.post('/api/recordatorios/send-manual', authMiddleware, async (req, res) => {
                     }
                     
                     // Construir parámetros de plantilla personalizados
-                    const templateName = template === 'disponible' ? 'disponible' : 'recordatorio';
+                    const esKids = a.categoria === 'kids';
+                    const templateName = template === 'disponible'
+                        ? (esKids ? 'disponible_kids' : 'disponible')
+                        : (esKids ? 'recordatorio_kids' : 'recordatorio');
                     const diaVenc = a.diaVencimiento ?? DIA_VENCIMIENTO_DEFAULT;
-                    const params = templateName === 'disponible'
+                    const params = (templateName === 'disponible' || templateName === 'disponible_kids')
                         ? [
                             a.nombre,
                             MONTHS[mes - 1],
@@ -736,7 +755,7 @@ app.post('/api/recordatorios/send-manual', authMiddleware, async (req, res) => {
                           ];
                     
                     mensajesIntentados++;
-                    console.log(`  📤 [MANUAL BACKGROUND] Enviando plantilla ${templateName} a ${a.nombre}...`);
+                    console.log(`  📤 [MANUAL BACKGROUND] Enviando plantilla ${templateName} a ${a.nombre} (Kids: ${esKids ? 'Sí' : 'No'})...`);
                     const resSend = await sendYCloudTemplate(config.ycloudApiKey, config.ycloudWhatsAppNumber, a.whatsapp, templateName, params);
                     
                     if (resSend.success) {

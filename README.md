@@ -13,7 +13,7 @@ Sistema integral de gestión de cuotas escolares/deportivas, historial de pagos 
 - 👥 **Gestión Completa de Alumnos:**
   - Registro manual con planes (`libre`, `3x`), cuota personalizada y día de vencimiento.
   - Importación masiva e inteligente desde archivos Excel (`.xlsx`, `.xls`, `.csv`).
-  - Edición rápida con pestañas y estados (`activo`, `becado`, `suspendido`, `inactivo`).
+  - Edición rápida con pestañas y estados (`activo`, `becado`, `inactivo`).
   - Eliminación individual y masiva (bulk delete).
 - 💰 **Control e Historial de Pagos Avanzado:**
   - Marcado rápido en 1 toque (Pagó / Deshacer a Pendiente).
@@ -25,7 +25,8 @@ Sistema integral de gestión de cuotas escolares/deportivas, historial de pagos 
   - Modo **Live App**: Carga y sincronización continua desde producción sin necesidad de reinstalar la APK tras cada cambio web.
   - Interfaz móvil adaptativa (diseño en tarjetas 2x2, safe-area insets para barra de navegación por gestos).
 - 💬 **Mensajería Oficial por WhatsApp (YCloud):**
-  - Envío individual y masivo con plantillas aprobadas por Meta (`recordatorio`, `disponible`, `bienvenida`).
+  - Envío individual y masivo con plantillas aprobadas por Meta (`recordatorio`, `disponible`, `bienvenida`, `recordatorio_kids`, `disponible_kids`).
+  - Cuentas de cobro diferenciadas entre Adultos y Kids (5 a 12 años).
   - Control de envíos duplicados por mes y tipo de recordatorio.
   - Cronjob automático diario a las 09:00 AM para notificación de vencimientos.
 - 🔐 **Autenticación y Seguridad:**

@@ -23,7 +23,10 @@ export interface Alumno {
     plan: 'libre' | '3x';
     cuota: number;
     diaVencimiento?: number;
-    estado: 'activo' | 'becado' | 'suspendido' | 'inactivo';
+    estado: 'activo' | 'becado' | 'inactivo';
+    categoria?: 'adulto' | 'kids';
+    edad?: number;
+    tutor?: string;
     notas?: string;
     fechaRegistro?: string;
 }
@@ -50,6 +53,7 @@ export interface Config {
     diaEnvio: number;
     mensajePlantilla: string;
     datosPago: string;
+    datosPagoKids?: string;
 }
 
 export interface DataStore {
@@ -67,6 +71,7 @@ export type RecordatoriosMap = Record<string, Partial<Record<RecordatorioTipo, s
 
 // ─── Helpers de conversión ──────────────────────────────────────────────────
 function dbToAlumno(db: DbAlumno): Alumno {
+    const rawEstado = (db.estado as string) === 'suspendido' ? 'inactivo' : (db.estado || 'activo');
     return {
         id: db.id,
         nombre: db.nombre,
@@ -74,7 +79,10 @@ function dbToAlumno(db: DbAlumno): Alumno {
         plan: db.plan,
         cuota: db.cuota,
         diaVencimiento: db.dia_vencimiento,
-        estado: db.estado || 'activo',
+        estado: rawEstado as Alumno['estado'],
+        categoria: (db.categoria as 'adulto' | 'kids') || 'adulto',
+        edad: db.edad != null ? Number(db.edad) : undefined,
+        tutor: db.tutor || undefined,
         notas: db.notas || undefined,
         fechaRegistro: db.creado_en || undefined
     };
@@ -178,6 +186,9 @@ export async function crearAlumno(alumno: Omit<Alumno, 'id'>): Promise<Alumno> {
             cuota: alumno.cuota,
             dia_vencimiento: alumno.diaVencimiento || 5,
             estado: alumno.estado || 'activo',
+            categoria: alumno.categoria || 'adulto',
+            edad: alumno.edad != null ? alumno.edad : null,
+            tutor: alumno.tutor || null,
             notas: alumno.notas
         };
         if (alumno.fechaRegistro) {
@@ -217,6 +228,9 @@ export async function crearAlumnosBulk(alumnos: Omit<Alumno, 'id'>[]): Promise<A
             cuota: a.cuota,
             dia_vencimiento: a.diaVencimiento || 5,
             estado: a.estado || 'activo',
+            categoria: a.categoria || 'adulto',
+            edad: a.edad != null ? a.edad : null,
+            tutor: a.tutor || null,
             notas: a.notas,
             ...(a.fechaRegistro ? { creado_en: new Date(a.fechaRegistro).toISOString() } : {})
         }));
@@ -290,6 +304,9 @@ export async function actualizarAlumno(id: string, data: Partial<Omit<Alumno, 'i
         if (data.cuota !== undefined) updateData.cuota = data.cuota;
         if (data.diaVencimiento !== undefined) updateData.dia_vencimiento = data.diaVencimiento;
         if (data.estado !== undefined) updateData.estado = data.estado;
+        if (data.categoria !== undefined) updateData.categoria = data.categoria;
+        if (data.edad !== undefined) updateData.edad = data.edad;
+        if (data.tutor !== undefined) updateData.tutor = data.tutor;
         if (data.notas !== undefined) updateData.notas = data.notas;
         if (data.fechaRegistro !== undefined && data.fechaRegistro) {
             updateData.creado_en = new Date(data.fechaRegistro).toISOString();
@@ -522,7 +539,7 @@ export async function obtenerConfig(): Promise<Config> {
         const config: Config = {
             ycloudApiKey: envApiKey,
             ycloudWhatsAppNumber: envWhatsAppNumber,
-            diaEnvio: 5, mensajePlantilla: '', datosPago: '',
+            diaEnvio: 5, mensajePlantilla: '', datosPago: '', datosPagoKids: '',
         };
         
         for (const row of data) {

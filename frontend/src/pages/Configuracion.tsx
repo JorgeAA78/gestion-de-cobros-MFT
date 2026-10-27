@@ -25,6 +25,7 @@ export default function Configuracion() {
     const [whatsappNumber, setWhatsappNumber] = useState(config.ycloudWhatsAppNumber);
     const [dia, setDia] = useState(config.diaEnvio);
     const [datosPago, setDatosPago] = useState(config.datosPago);
+    const [datosPagoKids, setDatosPagoKids] = useState(config.datosPagoKids || '');
     const [showTest, setShowTest] = useState(false);
     const [testNum, setTestNum] = useState('');
 
@@ -93,6 +94,7 @@ export default function Configuracion() {
             ycloudWhatsAppNumber: sanitizeInput(whatsappNumber),
             diaEnvio: dia,
             datosPago: sanitizeInput(datosPago),
+            datosPagoKids: sanitizeInput(datosPagoKids),
         });
         showToast('✅ Configuración guardada', 'success');
         addActivity('sent', 'Configuración actualizada');
@@ -189,9 +191,15 @@ export default function Configuracion() {
                             <p className="form-hint">A partir de este día, el sistema avisa sobre cuotas pendientes (default: 5)</p>
                         </div>
                         <div className="form-group">
-                            <label>Datos de Pago (CBU/Alias/MP)</label>
+                            <label>🥋 Datos de Pago Adultos (CBU/Alias/MP)</label>
                             <input type="text" className="form-input" value={datosPago}
-                                onChange={(e) => setDatosPago(e.target.value)} placeholder="Alias: mutantes.bjj" />
+                                onChange={(e) => setDatosPago(e.target.value)} placeholder="Alias: mutantesbjj" />
+                        </div>
+                        <div className="form-group">
+                            <label>🧒 Datos de Pago Kids (CBU/Alias/MP)</label>
+                            <input type="text" className="form-input" value={datosPagoKids}
+                                onChange={(e) => setDatosPagoKids(e.target.value)} placeholder="Alias: mutantesbjj.kids" />
+                            <p className="form-hint">Cuenta bancaria asociada a las plantillas disponible_kids y recordatorio_kids.</p>
                         </div>
                     </div>
                 </div>

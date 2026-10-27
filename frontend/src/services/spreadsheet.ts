@@ -25,8 +25,7 @@ const COLUMN_MAP: Record<string, keyof Omit<Alumno, 'id' | 'fechaRegistro'> | 'a
     email: 'email', correo: 'email', mail: 'email',
     'correo electronico': 'email', 'correo electrónico': 'email',
     // Plan
-    plan: 'plan', 'tipo de plan': 'plan', categoria: 'plan',
-    'categoría': 'plan', modalidad: 'plan',
+    plan: 'plan', 'tipo de plan': 'plan', modalidad: 'plan',
     // Cuota
     cuota: 'cuota', monto: 'cuota', precio: 'cuota', valor: 'cuota',
     importe: 'cuota', tarifa: 'cuota', mensualidad: 'cuota',
@@ -39,6 +38,12 @@ const COLUMN_MAP: Record<string, keyof Omit<Alumno, 'id' | 'fechaRegistro'> | 'a
     comentarios: 'notas', descripcion: 'notas', obs: 'notas',
     // Estado
     estado: 'estado', situacion: 'estado', 'situación': 'estado', status: 'estado',
+    // Categoría
+    categoria: 'categoria', 'categoría': 'categoria', tipo: 'categoria', grupo: 'categoria',
+    // Edad
+    edad: 'edad', age: 'edad', anios: 'edad', 'años': 'edad',
+    // Tutor
+    tutor: 'tutor', padre: 'tutor', madre: 'tutor', responsable: 'tutor', apoderado: 'tutor',
 };
 
 function mapColumnName(raw: string): string | null {
@@ -67,8 +72,7 @@ function normalizeNivel(val: string): Alumno['nivel'] {
 function normalizeEstado(val: string): EstadoAlumno {
     const l = val.toLowerCase().trim();
     if (l.includes('beca') || l.includes('gratis') || l.includes('free')) return 'becado';
-    if (l.includes('suspen') || l.includes('pausa')) return 'suspendido';
-    if (l.includes('inact') || l.includes('baja')) return 'inactivo';
+    if (l.includes('suspen') || l.includes('pausa') || l.includes('inact') || l.includes('baja')) return 'inactivo';
     return 'activo';
 }
 
@@ -99,6 +103,7 @@ export function parseExcelFile(
                             cuota: 0,
                             nivel: 'blanco',
                             estado: 'activo',
+                            categoria: 'adulto',
                         };
                         let apellido = '';
 
@@ -117,6 +122,19 @@ export function parseExcelFile(
                                     apellido = String(value).trim();
                                 } else if (mappedKey === 'estado') {
                                     alumno.estado = normalizeEstado(String(value));
+                                } else if (mappedKey === 'categoria') {
+                                    const v = String(value).toLowerCase();
+                                    alumno.categoria = (v.includes('kid') || v.includes('niñ') || v.includes('infan')) ? 'kids' : 'adulto';
+                                } else if (mappedKey === 'edad') {
+                                    const ed = parseInt(String(value).replace(/\D/g, ''), 10);
+                                    if (!isNaN(ed)) {
+                                        alumno.edad = ed;
+                                        if (ed >= 5 && ed <= 12 && (!alumno.categoria || alumno.categoria === 'adulto')) {
+                                            alumno.categoria = 'kids';
+                                        }
+                                    }
+                                } else if (mappedKey === 'tutor') {
+                                    alumno.tutor = String(value).trim();
                                 } else {
                                     alumno[mappedKey] = String(value);
                                 }

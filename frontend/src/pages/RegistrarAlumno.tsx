@@ -5,7 +5,7 @@ import MonthGrid from '../components/MonthGrid';
 import { showToast } from '../components/Toast';
 import { formatWhatsApp, formatCurrency, sendWhatsAppTemplate, sanitizeInput } from '../services/ycloud';
 import { parseExcelFile } from '../services/spreadsheet';
-import type { Alumno, EstadoAlumno } from '../types';
+import type { Alumno, EstadoAlumno, CategoriaAlumno } from '../types';
 import { ESTADO_LABELS } from '../types';
 
 export default function RegistrarAlumno() {
@@ -26,6 +26,9 @@ export default function RegistrarAlumno() {
     const [notas, setNotas] = useState('');
     const [diaVencimiento, setDiaVencimiento] = useState(new Date().getDate());
     const [estado, setEstado] = useState<EstadoAlumno>('activo');
+    const [categoria, setCategoria] = useState<CategoriaAlumno>('adulto');
+    const [edad, setEdad] = useState<string>('');
+    const [tutor, setTutor] = useState<string>('');
     const [fechaAlta, setFechaAlta] = useState(() => new Date().toISOString().split('T')[0]);
     const [loading, setLoading] = useState(false);
 
@@ -52,6 +55,9 @@ export default function RegistrarAlumno() {
         addAlumno({
             nombre: sanitizedNombre, whatsapp: formatted, email: sanitizedEmail, plan, cuota: cuotaVal,
             nivel, notas: sanitizedNotas, diaVencimiento, estado,
+            categoria,
+            edad: edad ? parseInt(edad, 10) : undefined,
+            tutor: tutor ? sanitizeInput(tutor) : undefined,
             fechaRegistro: fechaAlta ? new Date(fechaAlta + 'T12:00:00Z').toISOString() : new Date().toISOString(),
         });
 
@@ -74,6 +80,7 @@ export default function RegistrarAlumno() {
         setNombre(''); setWhatsapp(''); setEmail(''); setPlan('libre');
         setCuota(''); setNivel('blanco'); setMeses([currentMonth]); setNotas('');
         setDiaVencimiento(new Date().getDate()); setEstado('activo');
+        setCategoria('adulto'); setEdad(''); setTutor('');
         setFechaAlta(new Date().toISOString().split('T')[0]);
         setLoading(false);
     };
@@ -214,15 +221,85 @@ export default function RegistrarAlumno() {
                 <form className="card" onSubmit={handleSubmit}>
                     <h3 className="section-title">📝 Datos Personales</h3>
 
+                    {/* Selector de Categoría (Adulto vs Kids) */}
+                    <div className="form-group" style={{ marginBottom: 'var(--space-md)' }}>
+                        <label>Categoría del Alumno <span className="required">*</span></label>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-sm)' }}>
+                            <button
+                                type="button"
+                                className={`btn ${categoria === 'adulto' ? 'btn-primary' : 'btn-secondary'}`}
+                                onClick={() => setCategoria('adulto')}
+                                style={{ justifyContent: 'center', padding: '10px' }}
+                            >
+                                🥋 Adulto (+13 años)
+                            </button>
+                            <button
+                                type="button"
+                                className={`btn ${categoria === 'kids' ? 'btn-primary' : 'btn-secondary'}`}
+                                onClick={() => setCategoria('kids')}
+                                style={{ justifyContent: 'center', padding: '10px' }}
+                            >
+                                🧒 Kids (5 a 12 años)
+                            </button>
+                        </div>
+                        <p className="form-hint">
+                            {categoria === 'kids' 
+                                ? '🧒 Alumno Kids: Recibirá recordatorios automáticos con la cuenta bancaria de Kids.' 
+                                : '🥋 Alumno Adulto: Recibirá recordatorios con la cuenta bancaria general.'}
+                        </p>
+                    </div>
+
+                    <div className="form-row">
+                        <div className="form-group">
+                            <label>Edad (Años)</label>
+                            <input 
+                                type="number" 
+                                className="form-input" 
+                                value={edad} 
+                                onChange={(e) => {
+                                    setEdad(e.target.value);
+                                    const n = parseInt(e.target.value, 10);
+                                    if (!isNaN(n)) {
+                                        if (n >= 5 && n <= 12) setCategoria('kids');
+                                        else if (n > 12) setCategoria('adulto');
+                                    }
+                                }} 
+                                placeholder="Ej: 8" 
+                                min="3" 
+                                max="99" 
+                            />
+                            <p className="form-hint">5 a 12 años selecciona Kids automáticamente</p>
+                        </div>
+                        {categoria === 'kids' ? (
+                            <div className="form-group">
+                                <label>Nombre Padre / Tutor</label>
+                                <input 
+                                    type="text" 
+                                    className="form-input" 
+                                    value={tutor} 
+                                    onChange={(e) => setTutor(e.target.value)} 
+                                    placeholder="Ej: Laura Pérez (Mamá)" 
+                                />
+                                <p className="form-hint">El WhatsApp debe ser el del tutor</p>
+                            </div>
+                        ) : (
+                            <div className="form-group">
+                                <label>Email</label>
+                                <input type="email" className="form-input" value={email}
+                                    onChange={(e) => setEmail(e.target.value)} placeholder="juan@email.com" />
+                            </div>
+                        )}
+                    </div>
+
                     <div className="form-group">
-                        <label>Nombre Completo <span className="required">*</span></label>
+                        <label>Nombre Completo del Alumno <span className="required">*</span></label>
                         <input type="text" className="form-input" value={nombre}
                             onChange={(e) => setNombre(e.target.value)} placeholder="Ej: Juan Pérez" required />
                     </div>
 
                     <div className="form-row">
                         <div className="form-group">
-                            <label>WhatsApp <span className="required">*</span></label>
+                            <label>WhatsApp {categoria === 'kids' ? 'del Tutor/Responsable' : 'del Alumno'} <span className="required">*</span></label>
                             <div className="input-group">
                                 <span className="input-prefix">+54</span>
                                 <input type="tel" className="form-input" value={whatsapp}
@@ -230,11 +307,13 @@ export default function RegistrarAlumno() {
                             </div>
                             <p className="form-hint">Número sin 0 ni 15, con código de área</p>
                         </div>
-                        <div className="form-group">
-                            <label>Email</label>
-                            <input type="email" className="form-input" value={email}
-                                onChange={(e) => setEmail(e.target.value)} placeholder="juan@email.com" />
-                        </div>
+                        {categoria === 'kids' && (
+                            <div className="form-group">
+                                <label>Email (Opcional)</label>
+                                <input type="email" className="form-input" value={email}
+                                    onChange={(e) => setEmail(e.target.value)} placeholder="contacto@email.com" />
+                            </div>
+                        )}
                     </div>
 
                     <h3 className="section-title mt-2">🥋 Plan de Entrenamiento</h3>
