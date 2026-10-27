@@ -157,12 +157,12 @@ export default function Dashboard() {
 
     const closeEdit = () => setEditAlumno(null);
 
-    const saveEdit = () => {
+    const saveEdit = async () => {
         if (!editAlumno) return;
         const cuotaNum = parseInt(editCuota) || 0;
         const nameVal = editNombre.trim() || editAlumno.nombre;
         const sanitizedNombre = sanitizeInput(nameVal);
-        updateAlumno(editAlumno.id, {
+        const ok = await updateAlumno(editAlumno.id, {
             nombre: sanitizedNombre,
             whatsapp: formatWhatsApp(editWhatsapp.trim()),
             cuota: cuotaNum,
@@ -174,7 +174,11 @@ export default function Dashboard() {
             tutor: editTutor.trim() ? sanitizeInput(editTutor) : undefined,
             fechaRegistro: editFechaRegistro ? new Date(editFechaRegistro + 'T12:00:00Z').toISOString() : editAlumno.fechaRegistro,
         });
-        showToast(`✅ Alumno ${sanitizedNombre} actualizado`, 'success');
+        if (ok) {
+            showToast(`✅ Alumno ${sanitizedNombre} actualizado`, 'success');
+        } else {
+            showToast(`⚠️ No se pudo guardar en la base de datos. Verifica si ejecutaste migration_kids.sql en Supabase.`, 'warning');
+        }
         closeEdit();
     };
 

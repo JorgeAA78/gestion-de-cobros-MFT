@@ -146,7 +146,7 @@ interface StoreState {
 
     // Alumnos
     addAlumno: (alumno: Omit<Alumno, 'id' | 'fechaRegistro'> & { fechaRegistro?: string }) => Alumno;
-    updateAlumno: (id: string, data: Partial<Alumno>) => void;
+    updateAlumno: (id: string, data: Partial<Alumno>) => Promise<boolean>;
     removeAlumno: (id: string) => void;
     importAlumnos: (alumnos: (Omit<Alumno, 'id' | 'fechaRegistro'> & { fechaRegistro?: string })[]) => number;
 
@@ -269,11 +269,12 @@ export const useStore = create<StoreState>()(
                 return alumno;
             },
 
-            updateAlumno: (id, data) => {
+            updateAlumno: async (id, data) => {
                 set((s) => ({
                     alumnos: s.alumnos.map((a) => (a.id === id ? { ...a, ...data } : a)),
                 }));
-                apiPut(`/alumnos/${id}`, data);
+                const ok = await apiPut(`/alumnos/${id}`, data);
+                return Boolean(ok);
             },
 
             removeAlumno: (id) => {

@@ -318,7 +318,10 @@ export async function actualizarAlumno(id: string, data: Partial<Omit<Alumno, 'i
             .eq('id', id);
         
         if (error) {
-            console.error('Error actualizando alumno:', error);
+            console.error('❌ Error actualizando alumno en Supabase:', error.message || error);
+            if (error.code === 'PGRST204') {
+                console.error('⚠️ ALERTA SCHEMA: La columna no existe en Supabase (ejecutar migration_kids.sql en el SQL Editor de Supabase).');
+            }
             return false;
         }
         return true;
