@@ -198,8 +198,8 @@ export default function Configuracion() {
                         <div className="form-group">
                             <label>🧒 Datos de Pago Kids (CBU/Alias/MP)</label>
                             <input type="text" className="form-input" value={datosPagoKids}
-                                onChange={(e) => setDatosPagoKids(e.target.value)} placeholder="Alias: mutantesbjj.kids" />
-                            <p className="form-hint">Cuenta bancaria asociada a las plantillas disponible_kids y recordatorio_kids.</p>
+                                onChange={(e) => setDatosPagoKids(e.target.value)} placeholder="Alias: Santiechamacro (Santiago Echazu Bloser)" />
+                            <p className="form-hint">Cuenta bancaria de Kids (Santiago Echazu Bloser) asociada a las plantillas disponible_kids y recordatorio_kids.</p>
                         </div>
                     </div>
                 </div>

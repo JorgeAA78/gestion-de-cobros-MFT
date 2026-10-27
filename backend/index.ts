@@ -167,35 +167,69 @@ function getPendientes(alumnos: Alumno[], pagos: Pago[], mes: number, anio: numb
 // Templates de mensajes
 const TEMPLATE_PRIMER_RECORDATORIO = `¡Hola {nombre}! 👋
 
-Te recordamos que la cuota de *{mes}* ya está disponible para abonar:
+Te recordamos que la cuota de * {mes} * ya está disponible para abonar:
 
-💰 Monto: *{monto}*
-📋 Plan: *{plan}*
-📅 Fecha límite: {fecha}
+💰 Monto: * {monto} *
+📋 Plan: * {plan} *
+🗓️ Fecha límite: {fecha}
+
 Alias: mutantesbjj
 a nombre de: Pablo Sebastian Echazu Bloser
 
-*Por favor, enviar comprobante al realizar el pago*
+Por favor, enviar comprobante al realizar el pago
 
-Te esperamos en el tatami!
+¡Te esperamos en el tatami! 💪
 
-_Mutantes Fight Team - BJJ_`;
+Mutantes Fight Team - BJJ`;
 
 const TEMPLATE_SEGUNDO_RECORDATORIO = `¡Hola {nombre}! 👋
 
-Te recordamos que la cuota de *{mes}* está pendiente:
+Te recordamos que la cuota de * {mes} * está pendiente:
 
-💰 Monto: *{monto}*
-📋 Plan: *{plan}*
+💰 Monto: * {monto} *
+📋 Plan: * {plan} *
 
 Alias: mutantesbjj
 a nombre de: Pablo Sebastian Echazu Bloser
 
-*Por favor, enviar comprobante al realizar el pago*
+Por favor, enviar comprobante al realizar el pago
 
-Te esperamos en el tatami!
+¡Te esperamos en el tatami! 💪
 
-_Mutantes Fight Team - BJJ_`;
+Mutantes Fight Team - BJJ`;
+
+const TEMPLATE_PRIMER_RECORDATORIO_KIDS = `¡Hola! {nombre} 👋
+
+Te recordamos que la cuota de * {mes} * ya está disponible para abonar:
+
+💰 Monto: * {monto} *
+📋 Plan: * {plan} *
+🗓️ Fecha límite: {fecha}
+
+Alias: Santiechamacro
+a nombre de: Santiago Echazu Bloser
+
+Por favor, enviar comprobante al realizar el pago
+
+¡Te esperamos en el tatami! 💪
+
+Mutantes Fight Team - BJJ`;
+
+const TEMPLATE_SEGUNDO_RECORDATORIO_KIDS = `¡Hola! {nombre} 👋
+
+Te recordamos que la cuota de * {mes} * está pendiente:
+
+💰 Monto: * {monto} *
+📋 Plan: * {plan} *
+
+Alias: Santiechamacro
+a nombre de: Santiago Echazu Bloser
+
+Por favor, enviar comprobante al realizar el pago
+
+¡Te esperamos en el tatami! 💪
+
+Mutantes Fight Team - BJJ`;
 
 async function envioAutomatico() {
     const data = await obtenerTodo();

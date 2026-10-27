@@ -5,10 +5,10 @@ import { showToast } from '../components/Toast';
 import { formatCurrency, buildMessage } from '../services/ycloud';
 
 const PREVIEW_TEMPLATES: Record<string, string> = {
-    disponible: `¡Hola {nombre}! 👋 \n\nTe recordamos que la cuota de {mes} ya está disponible para abonar:\n\n💰 Monto: {monto}\n📋 Plan: {plan}\n📅 Fecha límite: {fecha}\n\nAlias: mutantesbjj\na nombre de: Pablo Sebastian Echazu Bloser\n\nPor favor, enviar comprobante al realizar el pago\n\n¡Te esperamos en el tatami! 💪\n\nMutantes Fight Team - BJJ`,
-    recordatorio: `¡Hola {nombre}! 👋 \n\nTe recordamos que la cuota de {mes} está pendiente:\n\n💰 Monto: {monto}\n📋 Plan: {plan}\n\nAlias: mutantesbjj\na nombre de: Pablo Sebastian Echazu Bloser\n\nPor favor, enviar comprobante al realizar el pago\n\n¡Te esperamos en el tatami! 💪 \n\nMutantes Fight Team - BJJ`,
-    disponible_kids: `¡Hola {nombre}! 👋 (Kids)\n\nTe recordamos que la cuota de {mes} ya está disponible para abonar:\n\n💰 Monto: {monto}\n📋 Plan: {plan}\n📅 Fecha límite: {fecha}\n\n[Cuenta Bancaria Kids]\nPor favor, enviar comprobante al realizar el pago\n\n¡Te esperamos en el tatami! 💪\n\nMutantes Fight Team - BJJ`,
-    recordatorio_kids: `¡Hola {nombre}! 👋 (Kids)\n\nTe recordamos que la cuota de {mes} está pendiente:\n\n💰 Monto: {monto}\n📋 Plan: {plan}\n\n[Cuenta Bancaria Kids]\nPor favor, enviar comprobante al realizar el pago\n\n¡Te esperamos en el tatami! 💪\n\nMutantes Fight Team - BJJ`,
+    disponible: `¡Hola {nombre}! 👋 \n\nTe recordamos que la cuota de * {mes} * ya está disponible para abonar:\n\n💰 Monto: * {monto} *\n📋 Plan: * {plan} *\n🗓️ Fecha límite: {fecha}\n\nAlias: mutantesbjj\na nombre de: Pablo Sebastian Echazu Bloser\n\nPor favor, enviar comprobante al realizar el pago\n\n¡Te esperamos en el tatami! 💪\n\nMutantes Fight Team - BJJ`,
+    recordatorio: `¡Hola {nombre}! 👋 \n\nTe recordamos que la cuota de * {mes} * está pendiente:\n\n💰 Monto: * {monto} *\n📋 Plan: * {plan} *\n\nAlias: mutantesbjj\na nombre de: Pablo Sebastian Echazu Bloser\n\nPor favor, enviar comprobante al realizar el pago\n\n¡Te esperamos en el tatami! 💪 \n\nMutantes Fight Team - BJJ`,
+    disponible_kids: `¡Hola! {nombre} 👋\n\nTe recordamos que la cuota de * {mes} * ya está disponible para abonar:\n\n💰 Monto: * {monto} *\n📋 Plan: * {plan} *\n🗓️ Fecha límite: {fecha}\n\nAlias: Santiechamacro\na nombre de: Santiago Echazu Bloser\n\nPor favor, enviar comprobante al realizar el pago\n\n¡Te esperamos en el tatami! 💪\n\nMutantes Fight Team - BJJ`,
+    recordatorio_kids: `¡Hola! {nombre} 👋\n\nTe recordamos que la cuota de * {mes} * está pendiente:\n\n💰 Monto: * {monto} *\n📋 Plan: * {plan} *\n\nAlias: Santiechamacro\na nombre de: Santiago Echazu Bloser\n\nPor favor, enviar comprobante al realizar el pago\n\n¡Te esperamos en el tatami! 💪\n\nMutantes Fight Team - BJJ`,
 };
 
 export default function Recordatorios() {
